@@ -1,97 +1,33 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Car Racing 2D - Mobile Full Screen</title>
-    <!-- Force portrait and ensure proper scaling -->
+    <title>Car Racing 2D - Refined</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover, maximum-scale=1.0">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <!-- <link rel="manifest" href="/manifest.json"> --> <!-- Optional: for PWA -->
     <style>
-        /* --- Full Screen Base --- */
-        html, body {
-            height: 100%; /* Critical for full height */
-            width: 100%;
-            margin: 0;
-            padding: 0;
-            overflow: hidden; /* Prevent scrollbars */
-            background: #0a0e21; /* Fallback background */
-            color: #00ffcc;
-            font-family: 'Orbitron', sans-serif;
-            -webkit-user-select: none; user-select: none;
-            overscroll-behavior: none; /* Prevent pull-to-refresh etc. */
-        }
-        /* --- Game Area Container (Flex to center canvas) --- */
-        #gameArea {
-            position: fixed; /* Cover viewport */
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            display: flex; /* Center canvas within */
-            justify-content: center;
-            align-items: center;
-            background-color: #0a0e21; /* Background for letter/pillarboxing */
-            overflow: hidden;
-             /* Initially hidden, shown by JS */
-             display: none;
-             z-index: 1;
-        }
-        /* --- Canvas Styling --- */
-        canvas {
-            display: block;
-            background-color: #333; /* Actual game background */
-            /* Let the JS set the width/height style based on aspect ratio */
-            /* max-width: 100%; max-height: 100%; */ /* Removed, JS handles this */
-            touch-action: none;
-            box-sizing: border-box;
-            image-rendering: -webkit-optimize-contrast; /* Might improve sharpness on scaling */
-            image-rendering: crisp-edges;
-        }
-
-        /* --- UI Elements Positioning (Absolute relative to gameArea) --- */
-        #timer, #score, #speedControl, #controls {
-            position: absolute;
-            z-index: 5; /* Above canvas */
-            box-sizing: border-box;
-        }
-        #timer, #score, #speedControl {
-            background: rgba(0, 0, 0, 0.8); color: #00ffcc;
-            border: 2px solid #ff00ff; border-radius: 5px;
-            text-shadow: 0 0 6px #00ffcc;
-            display: none; /* Shown by JS */
-            font-size: clamp(12px, 3vmin, 16px); /* Responsive font size */
-            padding: clamp(4px, 1vmin, 8px) clamp(8px, 2vmin, 15px);
-        }
+        /* --- Basic Styles --- */
+        html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; background: #0a0e21; }
+        body { color: #00ffcc; font-family: 'Orbitron', sans-serif; display: flex; flex-direction: column; justify-content: center; align-items: center; -webkit-user-select: none; user-select: none; overscroll-behavior: none; }
+        #gameArea { position: relative; width: fit-content; height: fit-content; max-width: 100%; max-height: 100%; display: none; border: 2px solid #00ffcc; /* Reduced border */ box-shadow: 0 0 15px #00ffcc; border-radius: 5px; /* Optional: subtle radius */ background-color: #333; overflow: hidden; margin: auto; }
+        canvas { display: block; touch-action: none; max-width: 100%; max-height: 100%; box-sizing: border-box; background-color: #444; image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges; }
+        #timer, #score, #speedControl, #controls { position: absolute; z-index: 5; box-sizing: border-box; }
+        #timer, #score, #speedControl { background: rgba(0, 0, 0, 0.8); color: #00ffcc; border: 1px solid #ff00ff; border-radius: 5px; text-shadow: 0 0 6px #00ffcc; display: none; font-size: clamp(11px, 2.8vmin, 15px); padding: clamp(4px, 1vmin, 8px) clamp(8px, 2vmin, 15px); }
         #timer { top: 1.5vmin; right: 1.5vmin; }
         #score { top: 1.5vmin; left: 1.5vmin; line-height: 1.2; }
-        #speedControl {
-            top: calc(1.5vmin + 3em); /* Position below score/timer */
-            right: 1.5vmin;
-            width: clamp(140px, 40vmin, 180px); /* Responsive width */
-            left: auto; display: none; align-items: center;
-            justify-content: space-between; padding: clamp(3px, 1vmin, 5px) clamp(6px, 1.5vmin, 10px);
-        }
+        #speedControl { top: calc(1.5vmin + 3.5em); right: 1.5vmin; width: clamp(140px, 40vmin, 180px); left: auto; display: none; align-items: center; justify-content: space-between; padding: 4px 8px; }
         #speedControl label { margin-right: 5px; white-space: nowrap; font-size: clamp(10px, 2.2vmin, 13px); }
         #speedSlider { width: 100%; cursor: pointer; appearance: none; height: 8px; background: linear-gradient(90deg, #00ffcc, #ff00ff); border-radius: 5px; outline: none; }
         #speedSlider:disabled { cursor: not-allowed; opacity: 0.6; }
-        #speedSlider::-webkit-slider-thumb { appearance: none; width: clamp(16px, 4vmin, 20px); height: clamp(16px, 4vmin, 20px); background: #fff; border: 2px solid #ff00ff; border-radius: 50%; cursor: pointer; }
+        #speedSlider::-webkit-slider-thumb { appearance: none; width: clamp(18px, 4vmin, 22px); height: clamp(18px, 4vmin, 22px); background: #fff; border: 2px solid #ff00ff; border-radius: 50%; cursor: pointer; }
         #speedSlider:disabled::-webkit-slider-thumb { cursor: not-allowed; background: #aaa; }
-        #speedSlider::-moz-range-thumb { width: clamp(14px, 3.5vmin, 18px); height: clamp(14px, 3.5vmin, 18px); background: #fff; border: 2px solid #ff00ff; border-radius: 50%; cursor: pointer; }
+        #speedSlider::-moz-range-thumb { width: clamp(16px, 3.5vmin, 20px); height: clamp(16px, 3.5vmin, 20px); background: #fff; border: 2px solid #ff00ff; border-radius: 50%; cursor: pointer; }
         #speedSlider:disabled::-moz-range-thumb { cursor: not-allowed; background: #aaa; }
-        #controls {
-            position: absolute;
-            bottom: 1.5vmin; /* Closer to bottom */
-            width: 100%; /* Full width of gameArea */
-            display: none;
-            justify-content: space-between; /* Buttons at edges */
-            align-items: center;
-            padding: 0 clamp(10px, 2vmin, 20px); /* Padding from edges */
-        }
-        .control-btn { background: linear-gradient(45deg, #ff00ff, #00ffcc); color: #fff; border: none; padding: clamp(10px, 2.5vh, 15px) clamp(15px, 4vw, 20px); cursor: pointer; font-size: clamp(18px, 4.5vw, 22px); border-radius: 10px; margin: 0; box-shadow: 0 0 10px #ff00ff, 0 0 20px #00ffcc; transition: transform 0.1s; display: inline-flex; justify-content: center; align-items: center; min-width: clamp(60px, 18vw, 80px); min-height: clamp(50px, 9vh, 65px); touch-action: manipulation; -webkit-tap-highlight-color: transparent; /* Remove tap highlight */ }
+        #controls { position: absolute; bottom: 1.5vmin; width: 100%; display: none; justify-content: space-between; align-items: center; padding: 0 clamp(10px, 2vmin, 20px); }
+        .control-btn { background: linear-gradient(45deg, #ff00ff, #00ffcc); color: #fff; border: none; padding: clamp(10px, 2.5vh, 15px) clamp(15px, 4vw, 20px); cursor: pointer; font-size: clamp(18px, 4.5vw, 22px); border-radius: 10px; margin: 0; box-shadow: 0 0 10px #ff00ff, 0 0 20px #00ffcc; transition: transform 0.1s; display: inline-flex; justify-content: center; align-items: center; min-width: clamp(60px, 18vw, 80px); min-height: clamp(50px, 9vh, 65px); touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
         .control-btn img { height: clamp(22px, 6vw, 30px); vertical-align: middle; pointer-events: none; }
         .control-btn:active { transform: scale(0.95); }
-
-        /* --- Screens & Other elements absolute to body --- */
         #loadingMessage { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #00ffcc; font-size: 18px; text-shadow: 0 0 10px #00ffcc; display: none; z-index: 20; background: rgba(0,0,0,0.7); padding: 15px 25px; border-radius: 8px; }
         #showMenuButton { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: linear-gradient(45deg, #00ffcc, #ff00ff); color: #1a2a6c; font-weight: bold; border: none; padding: 20px 40px; cursor: pointer; font-size: 24px; border-radius: 10px; box-shadow: 0 0 20px #00ffcc, 0 0 35px #ff00ff; transition: transform 0.2s, box-shadow 0.2s; z-index: 10; display: block; }
         #showMenuButton:hover { transform: translate(-50%, -50%) scale(1.1); } #showMenuButton:active { transform: translate(-50%, -50%) scale(0.95); }
@@ -204,20 +140,14 @@
 
         if (!ctx) { alert("Could not get canvas context."); throw new Error("Canvas context not available."); }
 
-        // --- Internal Canvas Resolution & Aspect Ratio ---
-        const GAME_ASPECT_RATIO = 400 / 600;
-        const INTERNAL_CANVAS_HEIGHT = 800; // Base resolution height
-        const INTERNAL_CANVAS_WIDTH = INTERNAL_CANVAS_HEIGHT * GAME_ASPECT_RATIO;
-
-        // Set internal canvas drawing size
-        canvas.width = INTERNAL_CANVAS_WIDTH;
-        canvas.height = INTERNAL_CANVAS_HEIGHT;
-        console.log(`Internal canvas size set: ${canvas.width} x ${canvas.height}`);
+        // --- Canvas Sizing Variables (will be set in resizeGameArea) ---
+        let canvasWidth = 400; // Initial default, will be recalculated
+        let canvasHeight = 600;
 
         // --- Infinite Level Config ---
-        const MAX_PLAYABLE_LEVEL = 100;
+        const MAX_PLAYABLE_LEVEL = 100; // Level to show "Max Level Reached"
         let currentLevel = 1;
-        let currentLevelConfig = {};
+        let currentLevelConfig = {}; // Will be populated by getLevelConfig
         let targetScore = 0;
 
         // --- Pagination Config ---
@@ -239,7 +169,7 @@
         let autopilotSpeedWarningActive = false; let originalSliderValue = 1.0; let originalGameSpeedMultiplier = 1.0;
         let isSeekingSafeSpot = false; let safeSpotTargetX = null;
 
-        // --- Game Element Variables (sized based on INTERNAL canvas size) ---
+        // --- Game Element Variables (sized in resizeGameArea) ---
         let carWidth, carHeight, coinWidth, coinHeight, superCoinWidth, superCoinHeight, autoCoinWidth, autoCoinHeight, enemyCarWidth, enemyCarHeight;
         let ABSOLUTE_BASE_ROAD_SPEED, ABSOLUTE_BASE_ENEMY_SPEED, ABSOLUTE_BASE_COIN_SPEED, ABSOLUTE_BASE_SUPERCOIN_SPEED;
         let ABSOLUTE_BASE_ENEMY_SPAWN_RATE = 0.011; let ABSOLUTE_BASE_COIN_SPAWN_RATE = 0.02; let ABSOLUTE_BASE_SUPERCOIN_SPAWN_RATE = 0.005; // Base rates don't depend on size
@@ -253,8 +183,21 @@
         function loadImage(imgData) { return new Promise((resolve, reject) => { const img = new Image(); img.onload = () => { images[imgData.name] = img; resolve(img); }; img.onerror = () => { console.error(` X Failed to load image: ${imgData.src}`); images[imgData.name] = null; reject(new Error(`Failed to load ${imgData.src}`)); }; img.src = imgData.src; }); }
         async function preloadImages() { if (assetsLoaded) return Promise.resolve(); console.log("Starting asset preloading..."); loadingMessage.innerText = "Loading Assets..."; loadingMessage.style.display = 'block'; showMenuButton.disabled = true; const promises = imageSources.map(loadImage); try { await Promise.all(promises); const essentialImages = ['car', 'enemyCar', 'road', 'autoCar']; const allEssentialLoaded = essentialImages.every(name => images[name] != null); if (allEssentialLoaded) { console.log("All essential images loaded successfully."); assetsLoaded = true; loadingMessage.style.display = 'none'; showMenuButton.disabled = false; return Promise.resolve(); } else { console.error("Essential images failed to load."); loadingMessage.innerText = "Error: Failed to load essential assets!"; essentialImages.forEach(name => { if(!images[name]) console.error(` - Missing essential image: ${name}`) }); return Promise.reject("Essential image load failure"); } } catch (error) { console.error("Error during image preloading:", error); loadingMessage.innerText = "Fatal Error Loading Assets!"; return Promise.reject(error); } }
 
-        // --- Initialize Sizes based on Internal Canvas ---
-        function calculateInitialSizes() {
+        // --- Resize Game Area and Calculate Sizes --- NEW FUNCTION ---
+        function resizeGameArea() {
+            const aspectRatio = 400 / 600;
+            const screenWidth = window.innerWidth; const screenHeight = window.innerHeight;
+            let newWidth, newHeight;
+
+            newHeight = screenHeight; newWidth = newHeight * aspectRatio;
+            if (newWidth > screenWidth) { newWidth = screenWidth; newHeight = newWidth / aspectRatio; }
+
+            console.log(`Screen: ${screenWidth}x${screenHeight} => Game Area: ${newWidth.toFixed(0)}x${newHeight.toFixed(0)}`);
+
+            canvas.width = newWidth; canvas.height = newHeight;
+            gameArea.style.width = `${newWidth}px`; gameArea.style.height = `${newHeight}px`;
+
+            // Define size-dependent constants & initial values
             carWidth = canvas.width * 0.125; carHeight = carWidth * 1.8;
             coinWidth = canvas.width * 0.05; coinHeight = coinWidth;
             superCoinWidth = canvas.width * 0.075; superCoinHeight = superCoinWidth;
@@ -263,13 +206,16 @@
             car.speed = canvas.width * 0.015; originalCarSpeed = car.speed;
             ABSOLUTE_BASE_ROAD_SPEED = canvas.height * 0.007; ABSOLUTE_BASE_ENEMY_SPEED = canvas.height * 0.008;
             ABSOLUTE_BASE_COIN_SPEED = canvas.height * 0.006; ABSOLUTE_BASE_SUPERCOIN_SPEED = canvas.height * 0.006;
-            console.log(`Internal sizes calculated. Base car speed: ${car.speed}`);
+            car.x = canvas.width / 2 - carWidth / 2; car.y = canvas.height - carHeight - 15;
+            if(gameRunning) { updateGameSpeed(); }
+            console.log(`Resized. Base car speed: ${car.speed}`);
         }
+
 
         // --- Dynamic Level Configuration ---
         function getLevelConfig(levelNum) { const baseTargetScore = 300; const baseEnemyRateMult = 0.6; const baseCoinRateMult = 1.3; const scoreIncreasePerLevel = 50 + (levelNum * 25); const enemyRateIncrease = 0.03 * levelNum; const coinRateDecrease = 0.02 * levelNum; let config = { level: levelNum, targetScore: Math.floor(baseTargetScore + scoreIncreasePerLevel * (levelNum - 1)), enemyRateMultiplier: Math.max(0.1, baseEnemyRateMult + enemyRateIncrease), coinRateMultiplier: Math.max(0.1, baseCoinRateMult - coinRateDecrease) }; return config; }
 
-        // --- Speeds, Rates, Audio ---
+        // --- Speeds, Rates, Scrolling, Controls, Audio ---
         let gameSpeedMultiplier = 1.0; let roadSpeed, enemySpeed, coinSpeed, superCoinSpeed; let enemySpawnRate, coinSpawnRate, superCoinSpawnRate; let roadY = 0; let moveLeft = false; let moveRight = false;
         backgroundMusic.volume = 0.4; autopilotMusic.volume = 0.6; gameOverSound.volume = 0.7; coinSound.volume = 0.6; superCoinSound.volume = 0.7; levelWinSound.volume = 0.8; continueSound.volume = 0.9;
         function playSound(soundElement) { if(soundElement) { soundElement.currentTime = 0; soundElement.play().catch(e => {}); } }
@@ -293,7 +239,7 @@
 
         // --- UI Visibility Control ---
         function hideAllOverlays() { levelSelectionScreen.style.display = 'none'; levelCompleteScreen.style.display = 'none'; gameOverScreen.style.display = 'none'; loadingMessage.style.display = 'none'; winningVideoContainer.style.display = 'none'; levelSearchNotification.style.display = 'none'; if(notificationTimeout) clearTimeout(notificationTimeout); }
-        function showGameScreen() { gameArea.style.display = 'flex'; timerDisplay.style.display = 'block'; scoreDisplay.style.display = 'block'; controls.style.display = 'flex'; speedControlDiv.style.display = 'flex'; }
+        function showGameScreen() { gameArea.style.display = 'block'; timerDisplay.style.display = 'block'; scoreDisplay.style.display = 'block'; controls.style.display = 'flex'; speedControlDiv.style.display = 'flex'; }
         function hideGameScreen() { gameArea.style.display = 'none'; timerDisplay.style.display = 'none'; scoreDisplay.style.display = 'none'; controls.style.display = 'none'; speedControlDiv.style.display = 'none'; }
 
         // --- Show Level Selection ---
@@ -338,7 +284,7 @@
             if (!assetsLoaded) { console.error("Assets not loaded!"); alert("Error: Game assets are not loaded. Please try again."); showMenuButton.style.display = 'block'; return; }
             if (gameRunning) { gameRunning = false; console.warn("Stopping previous game loop."); }
             hideAllOverlays(); showMenuButton.style.display = 'none';
-            resizeGameArea(); // Resize canvas and container
+            resizeGameArea(); // Resize canvas/container and calculate element sizes
             showGameScreen(); // Display the game area
 
             currentLevel = levelNum;
@@ -365,7 +311,7 @@
         }
 
         // --- Event Listeners ---
-        showMenuButton.addEventListener('click', () => { console.log("Show Menu Button clicked."); preloadImages().then(() => { console.log("Preloading successful."); currentPage = Math.ceil(highestUnlockedLevel / LEVELS_PER_PAGE); showLevelSelection(); }).catch((err) => { console.error("Preloading failed, cannot show menu.", err); }); });
+        showMenuButton.addEventListener('click', () => { console.log("Show Menu Button clicked."); preloadImages().then(() => { console.log("Preloading successful."); currentPage = Math.ceil(highestUnlockedLevel / LEVELS_PER_PAGE); calculateInitialSizes(); showLevelSelection(); }).catch((err) => { console.error("Preloading failed, cannot show menu.", err); }); });
         document.addEventListener('keydown', (e) => { if (isAutopilotActive || !gameRunning || gameOver) return; if (e.key === "ArrowLeft" || e.key === "a") moveLeft = true; if (e.key === "ArrowRight" || e.key === "d") moveRight = true; });
         document.addEventListener('keyup', (e) => { if (isAutopilotActive || !gameRunning || gameOver) return; if (e.key === "ArrowLeft" || e.key === "a") moveLeft = false; if (e.key === "ArrowRight" || e.key === "d") moveRight = false; });
         function handleControlStart(isLeft, event) { if (isAutopilotActive || !gameRunning || gameOver) return; event.preventDefault(); if (isLeft) moveLeft = true; else moveRight = true; }
@@ -386,12 +332,10 @@
         document.getElementById('nextPageButton').addEventListener('click', () => { const endLevel = (currentPage - 1) * LEVELS_PER_PAGE + LEVELS_PER_PAGE; const firstLevelOfNextPage = endLevel + 1; if (highestUnlockedLevel >= firstLevelOfNextPage || highestUnlockedLevel + 1 === firstLevelOfNextPage) { currentPage++; levelSearchInput.value = ''; levelSearchNotification.style.display = 'none'; if(notificationTimeout) clearTimeout(notificationTimeout); showLevelSelection(); } });
         levelSearchButton.addEventListener('click', handleLevelSearch);
         levelSearchInput.addEventListener('keydown', (event) => { if (event.key === "Enter") { event.preventDefault(); handleLevelSearch(); } });
+        window.addEventListener('resize', () => { if(gameRunning) { resizeGameArea(); }}); // Resize during game if needed
 
         // --- Initial Setup ---
-        window.onload = () => { console.log("Window loaded."); loadUnlockProgress(); currentPage = Math.ceil(highestUnlockedLevel / LEVELS_PER_PAGE); calculateInitialSizes(); /* Calculate sizes needed for menu */ hideGameScreen(); hideAllOverlays(); showMenuButton.style.display = 'block'; console.log("Initial setup complete. Waiting for user interaction."); };
-         // Optional: Resize listener
-         window.addEventListener('resize', () => { if(gameRunning) { resizeGameArea(); }});
-
+        window.onload = () => { console.log("Window loaded."); loadUnlockProgress(); currentPage = Math.ceil(highestUnlockedLevel / LEVELS_PER_PAGE); calculateInitialSizes(); /* Calc sizes needed for menu */ hideGameScreen(); hideAllOverlays(); showMenuButton.style.display = 'block'; console.log("Initial setup complete. Waiting for user interaction."); };
 
     </script>
 </body>
