@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Car Racing 2D - Level Search (Strict Unlock)</title>
+    <title>Car Racing 2D - Device Speed Adjust</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <style>
         /* --- Basic Styles --- */
@@ -58,20 +58,7 @@
 
     <button id="showMenuButton">Start Game</button>
     <div id="loadingMessage">Loading Assets...</div>
-    <div id="levelSelectionScreen" class="screen">
-        <h2>Select Level (Page <span id="currentPageSpan">1</span>)</h2>
-        <div class="search-container">
-            <label for="levelSearchInput" style="white-space: nowrap;">Go to Level:</label>
-            <input type="number" id="levelSearchInput" min="1" step="1">
-            <button id="levelSearchButton" class="search-button">Go</button>
-        </div>
-        <p id="levelSearchNotification"></p>
-        <div class="level-buttons-container" id="levelButtonsContainer"></div>
-        <div class="page-nav-container">
-            <button id="prevPageButton" class="page-nav-button">< Prev</button>
-            <button id="nextPageButton" class="page-nav-button">Next ></button>
-        </div>
-    </div>
+    <div id="levelSelectionScreen" class="screen"> <h2>Select Level (Page <span id="currentPageSpan">1</span>)</h2> <div class="search-container"> <label for="levelSearchInput" style="white-space: nowrap;">Go to Level:</label> <input type="number" id="levelSearchInput" min="1" step="1"> <button id="levelSearchButton" class="search-button">Go</button> </div> <p id="levelSearchNotification"></p> <div class="level-buttons-container" id="levelButtonsContainer"></div> <div class="page-nav-container"> <button id="prevPageButton" class="page-nav-button">< Prev</button> <button id="nextPageButton" class="page-nav-button">Next ></button> </div> </div>
     <div id="gameArea"> <canvas id="gameCanvas"></canvas> <div id="timer">Time: 0s</div> <div id="score">Score: 0 / 0</div> <div id="speedControl"> <label for="speedSlider">Speed:</label> <input type="range" id="speedSlider" min="0.5" max="2.5" step="0.1" value="1.0"> </div> <div id="controls"> <button id="leftButton" class="control-btn"> <img src="left.png" alt="Left"> </button> <button id="rightButton" class="control-btn"> <img src="right.png" alt="Right"> </button> </div> </div>
     <div id="levelCompleteScreen" class="screen"> <h2>Level <span id="levelNumComplete">1</span> Complete!</h2> <p>Score: <span id="finalScore">0</span></p> <button id="nextLevelButton">Next Level</button> <button id="replayLevelButton">Replay Level</button> <button id="levelMenuButtonLC">Level Menu</button> </div>
     <div id="gameOverScreen" class="screen"> <h2>Game Over!</h2> <p>Level: <span id="gameOverLevel">1</span></p> <p>Score: <span id="gameOverScore">0</span></p> <button id="retryLevelButton">Retry Level</button> <button id="levelMenuButtonGO">Level Menu</button> </div>
@@ -135,6 +122,11 @@
         const aspectRatio = 400 / 600; const maxWidth = 500; const availableHeight = window.innerHeight * 0.9; const availableWidth = window.innerWidth * 0.95; const canvasHeight = Math.min(availableHeight, 700); let canvasWidth = Math.min(maxWidth, availableWidth, canvasHeight * aspectRatio); canvasWidth = Math.max(canvasWidth, 250); const calculatedHeight = canvasWidth / aspectRatio;
         canvas.width = canvasWidth; canvas.height = calculatedHeight;
 
+        // --- Device Detection & Speed Adjustment --- NEW ---
+        const isMobileDevice = ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+        console.log(`Device detected as Mobile: ${isMobileDevice}`);
+        const MOBILE_SPEED_ADJUSTMENT_FACTOR = 0.75; // Adjust this value (e.g., 0.7 = 70% speed)
+
         // --- Infinite Level Config ---
         const MAX_PLAYABLE_LEVEL = 100;
         let currentLevel = 1;
@@ -160,9 +152,27 @@
         let autopilotSpeedWarningActive = false; let originalSliderValue = 1.0; let originalGameSpeedMultiplier = 1.0;
         let isSeekingSafeSpot = false; let safeSpotTargetX = null;
 
+        // --- Base Speed Calculations (Potentially Adjusted for Mobile) --- MODIFIED ---
+        let ABSOLUTE_BASE_ROAD_SPEED = canvas.height * 0.007;
+        let ABSOLUTE_BASE_ENEMY_SPEED = canvas.height * 0.008;
+        let ABSOLUTE_BASE_COIN_SPEED = canvas.height * 0.006;
+        let ABSOLUTE_BASE_SUPERCOIN_SPEED = canvas.height * 0.006;
+        let baseCarSpeed = canvas.width * 0.015; // Base horizontal speed
+
+        if (isMobileDevice) {
+            console.log("Applying mobile speed adjustment factor:", MOBILE_SPEED_ADJUSTMENT_FACTOR);
+            ABSOLUTE_BASE_ROAD_SPEED *= MOBILE_SPEED_ADJUSTMENT_FACTOR;
+            ABSOLUTE_BASE_ENEMY_SPEED *= MOBILE_SPEED_ADJUSTMENT_FACTOR;
+            ABSOLUTE_BASE_COIN_SPEED *= MOBILE_SPEED_ADJUSTMENT_FACTOR;
+            ABSOLUTE_BASE_SUPERCOIN_SPEED *= MOBILE_SPEED_ADJUSTMENT_FACTOR;
+            baseCarSpeed *= MOBILE_SPEED_ADJUSTMENT_FACTOR;
+        }
+        console.log("Final Base Road Speed:", ABSOLUTE_BASE_ROAD_SPEED.toFixed(3));
+        console.log("Final Base Car Speed:", baseCarSpeed.toFixed(3));
+
         // --- Game Elements Setup ---
         const carWidth = canvas.width * 0.125; const carHeight = carWidth * 1.8;
-        const car = { x: canvas.width / 2 - carWidth / 2, y: canvas.height - carHeight - 15, speed: canvas.width * 0.015 };
+        const car = { x: canvas.width / 2 - carWidth / 2, y: canvas.height - carHeight - 15, speed: baseCarSpeed }; // Use adjusted base speed
         const coinWidth = canvas.width * 0.05; const coinHeight = coinWidth;
         const superCoinWidth = canvas.width * 0.075; const superCoinHeight = superCoinWidth;
         const autoCoinWidth = superCoinWidth * 3; const autoCoinHeight = autoCoinWidth;
@@ -183,8 +193,7 @@
             return config;
         }
 
-        // --- Speeds, Rates, Scrolling, Controls, Audio ---
-        const ABSOLUTE_BASE_ROAD_SPEED = canvas.height * 0.007; const ABSOLUTE_BASE_ENEMY_SPEED = canvas.height * 0.008; const ABSOLUTE_BASE_COIN_SPEED = canvas.height * 0.006; const ABSOLUTE_BASE_SUPERCOIN_SPEED = canvas.height * 0.006; const ABSOLUTE_BASE_ENEMY_SPAWN_RATE = 0.011; const ABSOLUTE_BASE_COIN_SPAWN_RATE = 0.02; const ABSOLUTE_BASE_SUPERCOIN_SPAWN_RATE = 0.005;
+        // --- Speeds, Rates, Scrolling, Controls, Audio --- (Constants defined above, variables here)
         let gameSpeedMultiplier = 1.0; let roadSpeed, enemySpeed, coinSpeed, superCoinSpeed; let enemySpawnRate, coinSpawnRate, superCoinSpawnRate; let roadY = 0; let moveLeft = false; let moveRight = false;
         backgroundMusic.volume = 0.4; autopilotMusic.volume = 0.6; gameOverSound.volume = 0.7; coinSound.volume = 0.6; superCoinSound.volume = 0.7; levelWinSound.volume = 0.8; continueSound.volume = 0.9;
         function playSound(soundElement) { if(soundElement) { soundElement.currentTime = 0; soundElement.play().catch(e => {/*console.warn("Audio play failed:", e)*/}); } }
@@ -212,58 +221,13 @@
         function hideGameScreen() { gameArea.style.display = 'none'; timerDisplay.style.display = 'none'; scoreDisplay.style.display = 'none'; controls.style.display = 'none'; speedControlDiv.style.display = 'none'; }
 
         // --- Show Level Selection --- MODIFIED ---
-        function showLevelSelection() {
-             console.log(`Showing Level Selection Page ${currentPage}. Highest Unlocked: ${highestUnlockedLevel}`);
-             hideGameScreen(); hideAllOverlays(); showMenuButton.style.display = 'none';
-             levelSelectionScreen.style.display = 'block';
-             document.getElementById('currentPageSpan').textContent = currentPage;
-             const startLevel = (currentPage - 1) * LEVELS_PER_PAGE + 1;
-             const endLevel = startLevel + LEVELS_PER_PAGE - 1;
-             levelButtonsContainer.innerHTML = '';
-             for (let i = startLevel; i <= endLevel; i++) {
-                 const button = document.createElement('button');
-                 const config = getLevelConfig(i);
-                 button.innerHTML = `Level ${i}<span>Target: ${config.targetScore}</span>`;
-                 button.classList.add('level-button');
-                 button.dataset.level = i;
-                 if (i <= highestUnlockedLevel) {
-                     button.classList.remove('locked'); button.disabled = false;
-                     button.addEventListener('click', () => { console.log(`Level ${i} selected.`); startGame(i); });
-                 } else {
-                     button.classList.add('locked'); button.disabled = true;
-                 }
-                 levelButtonsContainer.appendChild(button);
-             }
-             const prevButton = document.getElementById('prevPageButton'); const nextButton = document.getElementById('nextPageButton');
-             prevButton.disabled = (currentPage <= 1);
-             const firstLevelOfNextPage = endLevel + 1;
-             nextButton.disabled = !(highestUnlockedLevel >= firstLevelOfNextPage || highestUnlockedLevel + 1 === firstLevelOfNextPage);
-             levelSearchInput.value = ''; // Clear search input when changing pages
-        }
+        function showLevelSelection() { console.log(`Showing Level Selection Page ${currentPage}. Highest Unlocked: ${highestUnlockedLevel}`); hideGameScreen(); hideAllOverlays(); showMenuButton.style.display = 'none'; levelSelectionScreen.style.display = 'block'; document.getElementById('currentPageSpan').textContent = currentPage; const startLevel = (currentPage - 1) * LEVELS_PER_PAGE + 1; const endLevel = startLevel + LEVELS_PER_PAGE - 1; levelButtonsContainer.innerHTML = ''; for (let i = startLevel; i <= endLevel; i++) { const button = document.createElement('button'); const config = getLevelConfig(i); button.innerHTML = `Level ${i}<span>Target: ${config.targetScore}</span>`; button.classList.add('level-button'); button.dataset.level = i; if (i <= highestUnlockedLevel) { button.classList.remove('locked'); button.disabled = false; button.addEventListener('click', () => { console.log(`Level ${i} selected.`); startGame(i); }); } else { button.classList.add('locked'); button.disabled = true; } levelButtonsContainer.appendChild(button); } const prevButton = document.getElementById('prevPageButton'); const nextButton = document.getElementById('nextPageButton'); prevButton.disabled = (currentPage <= 1); const firstLevelOfNextPage = endLevel + 1; nextButton.disabled = !(highestUnlockedLevel >= firstLevelOfNextPage || highestUnlockedLevel + 1 === firstLevelOfNextPage); levelSearchInput.value = ''; }
 
         // --- Play Winning Video ---
         function playWinningVideo() { console.log("Starting winning video playback..."); hideGameScreen(); hideAllOverlays(); winningVideoContainer.style.display = 'block'; winningVideo.currentTime = 0; winningVideo.play().then(() => { console.log("Winning video started playing."); }).catch(error => { console.error("Video play failed:", error); showPostVideoScreen(); }); }
 
         // --- Show Screen After Video --- MODIFIED ---
-        function showPostVideoScreen() {
-            console.log("Showing screen after video playback.");
-            hideGameScreen(); hideAllOverlays(); winningVideoContainer.style.display = 'none';
-            levelNumCompleteSpan.innerText = currentLevel; finalScoreSpan.innerText = score;
-            if (currentLevel >= MAX_PLAYABLE_LEVEL) {
-                levelCompleteScreen.querySelector('h2').innerHTML = `🎉 Max Level Reached! 🎉`;
-                nextLevelButton.disabled = true; nextLevelButton.innerText = "Amazing!"; nextLevelButton.style.display = 'inline-block';
-            } else {
-                levelCompleteScreen.querySelector('h2').innerHTML = `Level <span id="levelNumComplete">${currentLevel}</span> Complete!`;
-                const nextLevelNum = currentLevel + 1;
-                if (nextLevelNum <= highestUnlockedLevel) { // Check unlock status only
-                    nextLevelButton.disabled = false; nextLevelButton.innerText = "Next Level"; nextLevelButton.style.display = 'inline-block';
-                } else {
-                    nextLevelButton.disabled = true; nextLevelButton.innerText = "Locked"; nextLevelButton.style.display = 'none';
-                }
-            }
-            levelCompleteScreen.style.display = 'block';
-        }
-
+        function showPostVideoScreen() { console.log("Showing screen after video playback."); hideGameScreen(); hideAllOverlays(); winningVideoContainer.style.display = 'none'; levelNumCompleteSpan.innerText = currentLevel; finalScoreSpan.innerText = score; if (currentLevel >= MAX_PLAYABLE_LEVEL) { levelCompleteScreen.querySelector('h2').innerHTML = `🎉 Max Level Reached! 🎉`; nextLevelButton.disabled = true; nextLevelButton.innerText = "Amazing!"; nextLevelButton.style.display = 'inline-block'; } else { levelCompleteScreen.querySelector('h2').innerHTML = `Level <span id="levelNumComplete">${currentLevel}</span> Complete!`; const nextLevelNum = currentLevel + 1; if (nextLevelNum <= highestUnlockedLevel) { nextLevelButton.disabled = false; nextLevelButton.innerText = "Next Level"; nextLevelButton.style.display = 'inline-block'; } else { nextLevelButton.disabled = true; nextLevelButton.innerText = "Locked"; nextLevelButton.style.display = 'none'; } } levelCompleteScreen.style.display = 'block'; }
 
         // --- Find Safe Spot Logic ---
         function findAndSetSafeSpot() { console.log("Attempting to find a safe spot..."); const SAFE_CHECK_DISTANCE_Y = carHeight * 3.5; const LANE_CHECK_POSITIONS = [ carWidth * 0.75, canvas.width / 2, canvas.width - carWidth * 0.75 ]; let foundSafeSpot = false; for (const targetX of LANE_CHECK_POSITIONS) { let isLaneSafe = true; const laneLeft = targetX - carWidth / 2; const laneRight = targetX + carWidth / 2; for (const enemy of enemyCars) { const verticalDist = car.y - (enemy.y + enemyCarHeight); if (enemy.y < car.y && verticalDist < SAFE_CHECK_DISTANCE_Y) { const enemyLeft = enemy.x; const enemyRight = enemy.x + enemyCarWidth; if (enemyRight > laneLeft && enemyLeft < laneRight) { isLaneSafe = false; break; } } } if (isLaneSafe) { console.log(` - Found safe spot at X=${targetX.toFixed(0)}`); safeSpotTargetX = targetX; isSeekingSafeSpot = true; foundSafeSpot = true; return true; } } if (!foundSafeSpot) { console.log(" - No completely safe spot found."); safeSpotTargetX = null; isSeekingSafeSpot = false; } return false; }
@@ -290,7 +254,7 @@
             const justActivated = !isAutopilotActive; const now = Date.now();
             if (!isAutopilotActive) { originalCarSpeed = car.speed; originalSliderValue = parseFloat(speedSlider.value); originalGameSpeedMultiplier = gameSpeedMultiplier; console.log("Autopilot Activated! Stored original speed:", originalCarSpeed, "Slider:", originalSliderValue, "GameMult:", originalGameSpeedMultiplier); gameSpeedMultiplier = parseFloat(speedSlider.max); updateGameSpeed(); speedSlider.value = speedSlider.max; speedSlider.disabled = true; car.speed *= AUTOPILOT_CAR_SPEED_MULTIPLIER; console.log("Autopilot car speed boosted to:", car.speed); console.log("Game speed multiplier set to max:", gameSpeedMultiplier); }
             else { console.log("Autopilot Extended!"); if(car.speed !== originalCarSpeed * AUTOPILOT_CAR_SPEED_MULTIPLIER) { car.speed = originalCarSpeed * AUTOPILOT_CAR_SPEED_MULTIPLIER; } if(gameSpeedMultiplier !== parseFloat(speedSlider.max)){ gameSpeedMultiplier = parseFloat(speedSlider.max); updateGameSpeed(); } speedSlider.value = speedSlider.max; speedSlider.disabled = true; }
-            isAutopilotActive = true; autopilotEndTime = now + AUTOPILOT_DURATION; autopilotSpeedWarningActive = false; // Reset warning flag
+            isAutopilotActive = true; autopilotEndTime = now + AUTOPILOT_DURATION; autopilotSpeedWarningActive = false;
             if (justActivated) { try { if (!backgroundMusic.paused) { backgroundMusicResumeTime = backgroundMusic.currentTime; backgroundMusic.pause(); } autopilotMusic.currentTime = 0; autopilotMusic.play().catch(e => console.warn("Autopilot music play failed:", e)); } catch(e) { console.error("Error switching music to autopilot:", e); } }
             isInvincible = false;
         }
@@ -315,7 +279,7 @@
             const centerLaneX = canvas.width / 2 - carWidth / 2; if (car.x < centerLaneX - car.speed) return 1; if (car.x > centerLaneX + car.speed) return -1; return 0;
         }
 
-         // --- Handle Level Search --- MODIFIED ---
+        // --- Handle Level Search --- MODIFIED ---
          function handleLevelSearch() {
             if (notificationTimeout) clearTimeout(notificationTimeout);
             levelSearchNotification.style.display = 'none'; levelSearchNotification.textContent = '';
@@ -413,7 +377,7 @@
             isAutopilotActive = false; autopilotEndTime = 0; autopilotSpeedWarningActive = false; isSeekingSafeSpot = false; safeSpotTargetX = null; // Reset safe spot state
             nextAutoCoinSpawnTime = Date.now() + AUTOCOIN_INITIAL_SPAWN_DELAY; // Initial 10s delay
             backgroundMusicResumeTime = 0;
-            const baseCarSpeed = canvas.width * 0.015;
+            // Use the potentially mobile-adjusted baseCarSpeed
             car.speed = baseCarSpeed; originalCarSpeed = baseCarSpeed;
             originalSliderValue = 1.0; speedSlider.value = 1.0; speedSlider.disabled = false;
             gameSpeedMultiplier = 1.0; originalGameSpeedMultiplier = 1.0;
@@ -457,7 +421,7 @@
         winningVideo.addEventListener('ended', () => { console.log("Winning video finished."); showPostVideoScreen(); });
         // Optional Skip Button Listener
         // skipVideoButton.addEventListener('click', () => { winningVideo.pause(); showPostVideoScreen(); });
-         // --- Pagination Button Listeners ---
+         // --- Pagination Button Listeners --- MODIFIED ---
          document.getElementById('prevPageButton').addEventListener('click', () => { if (currentPage > 1) { currentPage--; levelSearchInput.value = ''; levelSearchNotification.style.display = 'none'; if(notificationTimeout) clearTimeout(notificationTimeout); showLevelSelection(); } });
          document.getElementById('nextPageButton').addEventListener('click', () => { const endLevel = (currentPage - 1) * LEVELS_PER_PAGE + LEVELS_PER_PAGE; const firstLevelOfNextPage = endLevel + 1; if (highestUnlockedLevel >= firstLevelOfNextPage || highestUnlockedLevel + 1 === firstLevelOfNextPage) { currentPage++; levelSearchInput.value = ''; levelSearchNotification.style.display = 'none'; if(notificationTimeout) clearTimeout(notificationTimeout); showLevelSelection(); } });
         // --- Level Search Listeners ---
