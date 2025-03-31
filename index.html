@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Car Racing 2D - Refined & Fixed</title>
+    <title>Car Racing 2D - Mobile Full Screen</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover, maximum-scale=1.0">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -10,8 +10,11 @@
         /* --- Basic Styles --- */
         html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; background: #0a0e21; }
         body { color: #00ffcc; font-family: 'Orbitron', sans-serif; display: flex; flex-direction: column; justify-content: center; align-items: center; -webkit-user-select: none; user-select: none; overscroll-behavior: none; }
-        #gameArea { position: relative; width: fit-content; height: fit-content; max-width: 100%; max-height: 100%; display: none; border: 2px solid #00ffcc; box-shadow: 0 0 15px #00ffcc; border-radius: 5px; background-color: #333; overflow: hidden; margin: auto; }
-        canvas { display: block; touch-action: none; max-width: 100%; max-height: 100%; box-sizing: border-box; background-color: #444; image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges; }
+        /* --- Game Area Container (Full Screen & Centering) --- */
+        #gameArea { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; background-color: #0a0e21; z-index: 1; overflow: hidden; display: none; }
+        /* --- Canvas Styling --- */
+        canvas { display: block; background-color: #333; max-width: 100vw; max-height: 100vh; touch-action: none; box-sizing: border-box; image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges; /* border: 2px solid #00ffcc; */ /* Optional border */ }
+        /* --- UI Elements Positioning (Absolute relative to gameArea) --- */
         #timer, #score, #speedControl, #controls { position: absolute; z-index: 5; box-sizing: border-box; }
         #timer, #score, #speedControl { background: rgba(0, 0, 0, 0.8); color: #00ffcc; border: 1px solid #ff00ff; border-radius: 5px; text-shadow: 0 0 6px #00ffcc; display: none; font-size: clamp(11px, 2.8vmin, 15px); padding: clamp(4px, 1vmin, 8px) clamp(8px, 2vmin, 15px); }
         #timer { top: 1.5vmin; right: 1.5vmin; }
@@ -28,6 +31,7 @@
         .control-btn { background: linear-gradient(45deg, #ff00ff, #00ffcc); color: #fff; border: none; padding: clamp(10px, 2.5vh, 15px) clamp(15px, 4vw, 20px); cursor: pointer; font-size: clamp(18px, 4.5vw, 22px); border-radius: 10px; margin: 0; box-shadow: 0 0 10px #ff00ff, 0 0 20px #00ffcc; transition: transform 0.1s; display: inline-flex; justify-content: center; align-items: center; min-width: clamp(60px, 18vw, 80px); min-height: clamp(50px, 9vh, 65px); touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
         .control-btn img { height: clamp(22px, 6vw, 30px); vertical-align: middle; pointer-events: none; }
         .control-btn:active { transform: scale(0.95); }
+        /* Screens & Other elements absolute to body */
         #loadingMessage { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #00ffcc; font-size: 18px; text-shadow: 0 0 10px #00ffcc; display: none; z-index: 20; background: rgba(0,0,0,0.7); padding: 15px 25px; border-radius: 8px; }
         #showMenuButton { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: linear-gradient(45deg, #00ffcc, #ff00ff); color: #1a2a6c; font-weight: bold; border: none; padding: 20px 40px; cursor: pointer; font-size: 24px; border-radius: 10px; box-shadow: 0 0 20px #00ffcc, 0 0 35px #ff00ff; transition: transform 0.2s, box-shadow 0.2s; z-index: 10; display: block; }
         #showMenuButton:hover { transform: translate(-50%, -50%) scale(1.1); } #showMenuButton:active { transform: translate(-50%, -50%) scale(0.95); }
@@ -37,8 +41,8 @@
         .screen button:hover { transform: scale(1.08); box-shadow: 0 0 15px #00ffcc, 0 0 25px #ff00ff; }
         .screen button:disabled { background: grey; color: #aaa; cursor: not-allowed; box-shadow: none; transform: none; }
         #levelSelectionScreen .level-buttons-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 10px; max-width: 400px; }
-        .level-button { background: linear-gradient(45deg, #00aaff, #00ffcc); color: #0a0e21; font-weight: bold; border: 2px solid #00ffcc; padding: 8px 10px; cursor: pointer; font-size: 1.1em; /* Slightly larger */ line-height: 1.2; border-radius: 8px; box-shadow: 0 0 8px #00aaff, 0 0 12px #00ffcc; transition: transform 0.2s, box-shadow 0.2s; width: 100px; height: 55px; position: relative; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        .level-button span { font-size: 0.75em; opacity: 0.9; margin-top: 2px; white-space: nowrap; } /* Target score style (optional) */
+        .level-button { background: linear-gradient(45deg, #00aaff, #00ffcc); color: #0a0e21; font-weight: bold; border: 2px solid #00ffcc; padding: 8px 10px; cursor: pointer; font-size: 1.1em; line-height: 1.2; border-radius: 8px; box-shadow: 0 0 8px #00aaff, 0 0 12px #00ffcc; transition: transform 0.2s, box-shadow 0.2s; width: 100px; height: 55px; position: relative; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .level-button span { font-size: 0.75em; opacity: 0.9; margin-top: 2px; white-space: nowrap; }
         .level-button:hover { transform: scale(1.1); box-shadow: 0 0 15px #00aaff, 0 0 25px #00ffcc; }
         .level-button.locked { background: linear-gradient(45deg, #555, #888); color: #bbb; border-color: #aaa; cursor: not-allowed; box-shadow: none; opacity: 0.6; }
         .level-button.locked:hover { transform: none; } .level-button.locked::after { content: '🔒'; position: absolute; top: 3px; right: 5px; font-size: 0.7em; opacity: 0.8; }
@@ -139,9 +143,6 @@
         // const autoCoinCollectSound = document.getElementById('autoCoinCollectSound');
 
         // --- Game Settings & State ---
-        const GAME_ASPECT_RATIO = 400 / 600;
-        const INTERNAL_CANVAS_HEIGHT = 800; // Base resolution height
-        const INTERNAL_CANVAS_WIDTH = INTERNAL_CANVAS_HEIGHT * GAME_ASPECT_RATIO;
         const MAX_PLAYABLE_LEVEL = 100;
         let currentLevel = 1;
         let currentLevelConfig = {};
@@ -157,6 +158,7 @@
         let backgroundMusicResumeTime = 0; let originalCarSpeed = 0; const AUTOPILOT_CAR_SPEED_MULTIPLIER = 2.5;
         let autopilotSpeedWarningActive = false; let originalSliderValue = 1.0; let originalGameSpeedMultiplier = 1.0;
         let isSeekingSafeSpot = false; let safeSpotTargetX = null;
+        let canvasWidth, canvasHeight; // Set in setupGameDimensionsAndElements
         let carWidth, carHeight, coinWidth, coinHeight, superCoinWidth, superCoinHeight, autoCoinWidth, autoCoinHeight, enemyCarWidth, enemyCarHeight;
         let ABSOLUTE_BASE_ROAD_SPEED, ABSOLUTE_BASE_ENEMY_SPEED, ABSOLUTE_BASE_COIN_SPEED, ABSOLUTE_BASE_SUPERCOIN_SPEED;
         let ABSOLUTE_BASE_ENEMY_SPAWN_RATE = 0.011; let ABSOLUTE_BASE_COIN_SPAWN_RATE = 0.02; let ABSOLUTE_BASE_SUPERCOIN_SPAWN_RATE = 0.005;
@@ -170,30 +172,47 @@
 
         function getContext() {
             if (!ctx) {
-                ctx = canvas.getContext('2d');
-                if (!ctx) {
-                    alert("Fatal Error: Could not get canvas context.");
-                    throw new Error("Canvas context not available.");
+                try {
+                    ctx = canvas.getContext('2d');
+                    if (!ctx) throw new Error("getContext returned null");
+                    console.log("Canvas context obtained successfully.");
+                } catch (e) {
+                    console.error("CRITICAL: Error getting canvas context!", e);
+                    alert("Fatal Error: Cannot initialize graphics. Please try refreshing or using a different browser.");
+                    // Disable game start button or take other measures
+                    showMenuButton.disabled = true;
+                    showMenuButton.textContent = "Error";
+                    throw e; // Re-throw to stop further execution
                 }
-                 console.log("Canvas context obtained.");
             }
-             return ctx;
+            return ctx;
         }
-
 
         function loadUnlockProgress() { try { const storedLevel = localStorage.getItem(STORAGE_KEY); if (storedLevel) { highestUnlockedLevel = parseInt(storedLevel, 10); if (isNaN(highestUnlockedLevel) || highestUnlockedLevel < 1) highestUnlockedLevel = 1; } else { highestUnlockedLevel = 1; localStorage.setItem(STORAGE_KEY, highestUnlockedLevel.toString()); } console.log("Highest unlocked level loaded:", highestUnlockedLevel); } catch (e) { console.error("LocalStorage access error.", e); highestUnlockedLevel = 1; } }
         function saveUnlockProgress(levelToUnlock) { if (levelToUnlock > highestUnlockedLevel) { highestUnlockedLevel = levelToUnlock; try { localStorage.setItem(STORAGE_KEY, highestUnlockedLevel.toString()); console.log("Progress saved:", highestUnlockedLevel); } catch (e) { console.error("LocalStorage save error.", e); } } }
         function loadImage(imgData) { return new Promise((resolve, reject) => { const img = new Image(); img.onload = () => { images[imgData.name] = img; resolve(img); }; img.onerror = () => { console.error(` X Failed to load image: ${imgData.src}`); images[imgData.name] = null; reject(new Error(`Failed to load ${imgData.src}`)); }; img.src = imgData.src; }); }
         async function preloadImages() { if (assetsLoaded) return Promise.resolve(); console.log("Starting asset preloading..."); loadingMessage.innerText = "Loading Assets..."; loadingMessage.style.display = 'block'; showMenuButton.disabled = true; const promises = imageSources.map(loadImage); try { await Promise.all(promises); const essentialImages = ['car', 'enemyCar', 'road', 'autoCar']; const allEssentialLoaded = essentialImages.every(name => images[name] != null); if (allEssentialLoaded) { console.log("All essential images loaded successfully."); assetsLoaded = true; loadingMessage.style.display = 'none'; showMenuButton.disabled = false; return Promise.resolve(); } else { console.error("Essential images failed to load."); loadingMessage.innerText = "Error: Failed to load essential assets!"; essentialImages.forEach(name => { if(!images[name]) console.error(` - Missing essential image: ${name}`) }); return Promise.reject("Essential image load failure"); } } catch (error) { console.error("Error during image preloading:", error); loadingMessage.innerText = "Fatal Error Loading Assets!"; return Promise.reject(error); } }
 
-        // Setup sizes based on internal canvas dimensions
+        // --- Setup Game Dimensions (called once per game start) ---
         function setupGameDimensionsAndElements() {
             console.log("Setting up game dimensions and elements...");
-            // Apply internal resolution
-            canvas.width = INTERNAL_CANVAS_WIDTH;
-            canvas.height = INTERNAL_CANVAS_HEIGHT;
+            const aspectRatio = 400 / 600;
+            const screenWidth = window.innerWidth; const screenHeight = window.innerHeight;
+            let newWidth, newHeight;
 
-            // Calculate sizes based on internal resolution
+            // Prioritize Height
+            let tempWidth = screenHeight * aspectRatio;
+            if (tempWidth <= screenWidth) { newWidth = tempWidth; newHeight = screenHeight; }
+            else { newWidth = screenWidth; newHeight = newWidth / aspectRatio; }
+
+            console.log(`Screen: ${screenWidth}x${screenHeight} => Game Area/Canvas: ${newWidth.toFixed(0)}x${newHeight.toFixed(0)}`);
+
+            // Apply size to canvas (internal resolution AND display style)
+            canvas.width = newWidth; canvas.height = newHeight;
+            canvas.style.width = `${newWidth}px`; canvas.style.height = `${newHeight}px`;
+            gameArea.style.width = `${newWidth}px`; gameArea.style.height = `${newHeight}px`; // Size container
+
+            // Calculate sizes based on new dimensions
             carWidth = canvas.width * 0.125; carHeight = carWidth * 1.8;
             coinWidth = canvas.width * 0.05; coinHeight = coinWidth;
             superCoinWidth = canvas.width * 0.075; superCoinHeight = superCoinWidth;
@@ -202,10 +221,7 @@
             car.speed = canvas.width * 0.015; originalCarSpeed = car.speed;
             ABSOLUTE_BASE_ROAD_SPEED = canvas.height * 0.007; ABSOLUTE_BASE_ENEMY_SPEED = canvas.height * 0.008;
             ABSOLUTE_BASE_COIN_SPEED = canvas.height * 0.006; ABSOLUTE_BASE_SUPERCOIN_SPEED = canvas.height * 0.006;
-
-            // Reset car position
-            car.x = canvas.width / 2 - carWidth / 2;
-            car.y = canvas.height - carHeight - 15;
+            car.x = canvas.width / 2 - carWidth / 2; car.y = canvas.height - carHeight - 15; // Set position
             console.log(`Dimensions set. Base car speed: ${car.speed}`);
         }
 
@@ -269,17 +285,16 @@
         function gameLoop(currentTime) {
             if (!gameRunning) return;
             const now = Date.now();
-            try { // Add a try-catch around the whole loop for critical errors
+            try {
                 // Autopilot Checks
                 if (isAutopilotActive) {
-                    if (now >= autopilotEndTime) { deactivateAutopilotEffects(); } // Full deactivation
-                    else if (!autopilotSpeedWarningActive && now >= autopilotEndTime - 2000) { // Speed/Slider/Safe Spot warning check
-                        autopilotSpeedWarningActive = true;
-                        if(originalCarSpeed > 0 && car.speed !== originalCarSpeed) { car.speed = originalCarSpeed; console.log("Autopilot ending: Restored CAR speed"); }
-                        if(gameSpeedMultiplier !== originalGameSpeedMultiplier){ gameSpeedMultiplier = originalGameSpeedMultiplier; console.log("Autopilot ending: Restored GAME speed mult"); updateGameSpeed(); } // Apply speed change
-                        speedSlider.value = originalSliderValue; // Restore slider value (still disabled)
-                        console.log("Autopilot ending: Restored SLIDER value");
-                        findAndSetSafeSpot(); // Find safe spot during warning
+                    if (now >= autopilotEndTime) { deactivateAutopilotEffects(); }
+                    else if (!autopilotSpeedWarningActive && now >= autopilotEndTime - 2000) {
+                         autopilotSpeedWarningActive = true;
+                         if(originalCarSpeed > 0 && car.speed !== originalCarSpeed) { car.speed = originalCarSpeed; console.log("Autopilot ending: Restored CAR speed"); }
+                         if(gameSpeedMultiplier !== originalGameSpeedMultiplier){ gameSpeedMultiplier = originalGameSpeedMultiplier; console.log("Autopilot ending: Restored GAME speed mult"); updateGameSpeed(); }
+                         speedSlider.value = originalSliderValue; console.log("Autopilot ending: Restored SLIDER value");
+                         findAndSetSafeSpot();
                     }
                 }
 
@@ -288,16 +303,16 @@
                 // Update Layer
                 if (!gameOver) {
                     // Movement Logic
-                    if (isSeekingSafeSpot && safeSpotTargetX !== null) { // Prioritize seeking safe spot
+                    if (isSeekingSafeSpot && safeSpotTargetX !== null) {
                         const carCenterX = car.x + carWidth / 2; const targetDiff = safeSpotTargetX - carCenterX; const moveThreshold = car.speed * 0.5;
                         if (Math.abs(targetDiff) > moveThreshold) { if (targetDiff > 0 && car.x < canvas.width - carWidth) car.x += car.speed; else if (targetDiff < 0 && car.x > 0) car.x -= car.speed; }
-                        else { isSeekingSafeSpot = false; } // Stop seeking
+                        else { isSeekingSafeSpot = false; }
                         car.x = Math.max(0, Math.min(canvas.width - carWidth, car.x));
-                    } else if (isAutopilotActive) { // Normal autopilot movement
+                    } else if (isAutopilotActive) {
                         const autoMove = calculateAutopilotMove();
                         if (autoMove === -1 && car.x > 0) car.x -= car.speed; else if (autoMove === 1 && car.x < canvas.width - carWidth) car.x += car.speed;
                         car.x = Math.max(0, Math.min(canvas.width - carWidth, car.x));
-                    } else { // Player control
+                    } else {
                         if (moveLeft && car.x > 0) car.x -= car.speed; if (moveRight && car.x < canvas.width - carWidth) car.x += car.speed;
                         car.x = Math.max(0, Math.min(canvas.width - carWidth, car.x));
                     }
@@ -305,25 +320,16 @@
                     updateEnemyCars(); if (!gameOver) updateCoins(); if (!gameOver) updateSuperCoins(); if (!gameOver) updateAutoCoins();
                 }
 
-                // Win Condition Check
                 if (!gameOver && score >= targetScore) { handleLevelWin(); return; }
 
                 // Draw Layer
                 drawRoad(); drawCoins(); drawSuperCoins(); drawAutoCoins(); drawEnemyCars(); drawCar();
 
-                // Update Time UI
                 if (!gameOver) { timeElapsed++; if (timeElapsed % 60 === 0) { timerDisplay.innerText = `Time: ${Math.floor(timeElapsed / 60)}s`; } }
 
-                requestAnimationFrame(gameLoop); // Request next frame only if no critical error
+                requestAnimationFrame(gameLoop);
 
-            } catch (loopError) {
-                 console.error("CRITICAL ERROR in game loop:", loopError);
-                 alert("A critical error occurred. Please refresh the page.");
-                 // Optionally try to stop audio or do other cleanup
-                 gameRunning = false; // Stop the loop
-                 backgroundMusic.pause();
-                 autopilotMusic.pause();
-            }
+            } catch (loopError) { console.error("CRITICAL ERROR in game loop:", loopError); alert("A critical error occurred. Please refresh."); gameRunning = false; backgroundMusic.pause(); autopilotMusic.pause(); }
         }
 
 
@@ -334,7 +340,7 @@
             if (!ctx) { console.error("Canvas context not ready!"); alert("Error: Graphics cannot be drawn. Please refresh."); return; }
             if (gameRunning) { gameRunning = false; console.warn("Stopping previous game loop."); }
 
-            try { // Wrap start game logic in try-catch
+            try {
                 hideAllOverlays(); showMenuButton.style.display = 'none';
                 setupGameDimensionsAndElements(); // Setup sizes based on internal resolution
                 showGameScreen(); // Display the game area
@@ -349,7 +355,7 @@
                 isAutopilotActive = false; autopilotEndTime = 0; autopilotSpeedWarningActive = false; isSeekingSafeSpot = false; safeSpotTargetX = null;
                 nextAutoCoinSpawnTime = Date.now() + AUTOCOIN_INITIAL_SPAWN_DELAY;
                 backgroundMusicResumeTime = 0;
-                // car.speed and originalCarSpeed set in setupGameDimensionsAndElements
+                car.speed = originalCarSpeed; // Use speed calculated in setupGameDimensionsAndElements
                 originalSliderValue = 1.0; speedSlider.value = 1.0; speedSlider.disabled = false;
                 gameSpeedMultiplier = 1.0; originalGameSpeedMultiplier = 1.0;
                 // Car position reset in setupGameDimensionsAndElements
@@ -364,14 +370,12 @@
             } catch (startError) {
                 console.error("CRITICAL ERROR during startGame:", startError);
                 alert("An error occurred starting the level. Please refresh.");
-                hideGameScreen(); // Hide broken game screen
-                showMenuButton.style.display = 'block'; // Show start button again
-                showMenuButton.disabled = false;
+                hideGameScreen(); showMenuButton.style.display = 'block'; showMenuButton.disabled = false;
             }
         }
 
         // --- Event Listeners ---
-        showMenuButton.addEventListener('click', () => { console.log("Show Menu Button clicked."); preloadImages().then(() => { console.log("Preloading successful."); currentPage = Math.ceil(highestUnlockedLevel / LEVELS_PER_PAGE); setupGameDimensionsAndElements(); /* Calculate sizes needed for menu */ showLevelSelection(); }).catch((err) => { console.error("Preloading failed, cannot show menu.", err); }); });
+        showMenuButton.addEventListener('click', () => { console.log("Show Menu Button clicked."); preloadImages().then(() => { console.log("Preloading successful."); currentPage = Math.ceil(highestUnlockedLevel / LEVELS_PER_PAGE); setupGameDimensionsAndElements(); showLevelSelection(); }).catch((err) => { console.error("Preloading failed, cannot show menu.", err); }); });
         document.addEventListener('keydown', (e) => { if (isAutopilotActive || !gameRunning || gameOver) return; if (e.key === "ArrowLeft" || e.key === "a") moveLeft = true; if (e.key === "ArrowRight" || e.key === "d") moveRight = true; });
         document.addEventListener('keyup', (e) => { if (isAutopilotActive || !gameRunning || gameOver) return; if (e.key === "ArrowLeft" || e.key === "a") moveLeft = false; if (e.key === "ArrowRight" || e.key === "d") moveRight = false; });
         function handleControlStart(isLeft, event) { if (isAutopilotActive || !gameRunning || gameOver) return; event.preventDefault(); if (isLeft) moveLeft = true; else moveRight = true; }
@@ -387,7 +391,6 @@
         retryLevelButton.addEventListener('click', () => startGame(currentLevel));
         levelMenuButtonGO.addEventListener('click', () => { currentPage = Math.ceil(currentLevel / LEVELS_PER_PAGE); showLevelSelection(); } );
         winningVideo.addEventListener('ended', () => { console.log("Winning video finished."); showPostVideoScreen(); });
-        // skipVideoButton.addEventListener('click', () => { winningVideo.pause(); showPostVideoScreen(); });
         document.getElementById('prevPageButton').addEventListener('click', () => { if (currentPage > 1) { currentPage--; levelSearchInput.value = ''; levelSearchNotification.style.display = 'none'; if(notificationTimeout) clearTimeout(notificationTimeout); showLevelSelection(); } });
         document.getElementById('nextPageButton').addEventListener('click', () => { const endLevel = (currentPage - 1) * LEVELS_PER_PAGE + LEVELS_PER_PAGE; const firstLevelOfNextPage = endLevel + 1; if (highestUnlockedLevel >= firstLevelOfNextPage || highestUnlockedLevel + 1 === firstLevelOfNextPage) { currentPage++; levelSearchInput.value = ''; levelSearchNotification.style.display = 'none'; if(notificationTimeout) clearTimeout(notificationTimeout); showLevelSelection(); } });
         levelSearchButton.addEventListener('click', handleLevelSearch);
@@ -396,17 +399,16 @@
         // --- Initial Setup ---
         window.onload = () => {
              console.log("Window loaded.");
-             // Get context early to catch errors
-             getContext();
+             // Get context early
+             getContext(); // Ensure context exists or fail early
              loadUnlockProgress();
              currentPage = Math.ceil(highestUnlockedLevel / LEVELS_PER_PAGE);
-             // Calculate sizes once for menu display, startGame will redo it
-             setupGameDimensionsAndElements();
+             // We calculate sizes just before starting the game now
              hideGameScreen(); hideAllOverlays();
              showMenuButton.style.display = 'block';
              console.log("Initial setup complete. Waiting for user interaction.");
         };
-         // Removed resize listener for stability
+        // window.addEventListener('resize', () => { if(gameRunning) { resizeGameArea(); }}); // Resize listener commented out for stability
 
     </script>
 </body>
