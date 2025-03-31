@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Car Racing 2D - Refined</title>
+    <title>Car Racing 2D - Refined & Fixed</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover, maximum-scale=1.0">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -10,7 +10,7 @@
         /* --- Basic Styles --- */
         html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; background: #0a0e21; }
         body { color: #00ffcc; font-family: 'Orbitron', sans-serif; display: flex; flex-direction: column; justify-content: center; align-items: center; -webkit-user-select: none; user-select: none; overscroll-behavior: none; }
-        #gameArea { position: relative; width: fit-content; height: fit-content; max-width: 100%; max-height: 100%; display: none; border: 2px solid #00ffcc; /* Reduced border */ box-shadow: 0 0 15px #00ffcc; border-radius: 5px; /* Optional: subtle radius */ background-color: #333; overflow: hidden; margin: auto; }
+        #gameArea { position: relative; width: fit-content; height: fit-content; max-width: 100%; max-height: 100%; display: none; border: 2px solid #00ffcc; box-shadow: 0 0 15px #00ffcc; border-radius: 5px; background-color: #333; overflow: hidden; margin: auto; }
         canvas { display: block; touch-action: none; max-width: 100%; max-height: 100%; box-sizing: border-box; background-color: #444; image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges; }
         #timer, #score, #speedControl, #controls { position: absolute; z-index: 5; box-sizing: border-box; }
         #timer, #score, #speedControl { background: rgba(0, 0, 0, 0.8); color: #00ffcc; border: 1px solid #ff00ff; border-radius: 5px; text-shadow: 0 0 6px #00ffcc; display: none; font-size: clamp(11px, 2.8vmin, 15px); padding: clamp(4px, 1vmin, 8px) clamp(8px, 2vmin, 15px); }
@@ -37,8 +37,8 @@
         .screen button:hover { transform: scale(1.08); box-shadow: 0 0 15px #00ffcc, 0 0 25px #ff00ff; }
         .screen button:disabled { background: grey; color: #aaa; cursor: not-allowed; box-shadow: none; transform: none; }
         #levelSelectionScreen .level-buttons-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 10px; max-width: 400px; }
-        .level-button { background: linear-gradient(45deg, #00aaff, #00ffcc); color: #0a0e21; font-weight: bold; border: 2px solid #00ffcc; padding: 8px 10px; cursor: pointer; font-size: 0.8em; line-height: 1.2; border-radius: 8px; box-shadow: 0 0 8px #00aaff, 0 0 12px #00ffcc; transition: transform 0.2s, box-shadow 0.2s; width: 90px; height: 60px; position: relative; white-space: pre-line; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        .level-button span { font-size: 0.8em; opacity: 0.9; margin-top: 2px; }
+        .level-button { background: linear-gradient(45deg, #00aaff, #00ffcc); color: #0a0e21; font-weight: bold; border: 2px solid #00ffcc; padding: 8px 10px; cursor: pointer; font-size: 1.1em; /* Slightly larger */ line-height: 1.2; border-radius: 8px; box-shadow: 0 0 8px #00aaff, 0 0 12px #00ffcc; transition: transform 0.2s, box-shadow 0.2s; width: 100px; height: 55px; position: relative; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .level-button span { font-size: 0.75em; opacity: 0.9; margin-top: 2px; white-space: nowrap; } /* Target score style (optional) */
         .level-button:hover { transform: scale(1.1); box-shadow: 0 0 15px #00aaff, 0 0 25px #00ffcc; }
         .level-button.locked { background: linear-gradient(45deg, #555, #888); color: #bbb; border-color: #aaa; cursor: not-allowed; box-shadow: none; opacity: 0.6; }
         .level-button.locked:hover { transform: none; } .level-button.locked::after { content: '🔒'; position: absolute; top: 3px; right: 5px; font-size: 0.7em; opacity: 0.8; }
@@ -104,7 +104,7 @@
         const levelButtonsContainer = document.getElementById('levelButtonsContainer');
         const gameArea = document.getElementById('gameArea');
         const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
+        let ctx; // Initialize later after checking
         const timerDisplay = document.getElementById('timer');
         const scoreDisplay = document.getElementById('score');
         const controls = document.getElementById('controls');
@@ -138,29 +138,18 @@
         const continueSound = document.getElementById('continueSound');
         // const autoCoinCollectSound = document.getElementById('autoCoinCollectSound');
 
-        if (!ctx) { alert("Could not get canvas context."); throw new Error("Canvas context not available."); }
-
-        // --- Canvas Sizing Variables (will be set in resizeGameArea) ---
-        let canvasWidth = 400; // Initial default, will be recalculated
-        let canvasHeight = 600;
-
-        // --- Infinite Level Config ---
-        const MAX_PLAYABLE_LEVEL = 100; // Level to show "Max Level Reached"
+        // --- Game Settings & State ---
+        const GAME_ASPECT_RATIO = 400 / 600;
+        const INTERNAL_CANVAS_HEIGHT = 800; // Base resolution height
+        const INTERNAL_CANVAS_WIDTH = INTERNAL_CANVAS_HEIGHT * GAME_ASPECT_RATIO;
+        const MAX_PLAYABLE_LEVEL = 100;
         let currentLevel = 1;
-        let currentLevelConfig = {}; // Will be populated by getLevelConfig
+        let currentLevelConfig = {};
         let targetScore = 0;
-
-        // --- Pagination Config ---
         let currentPage = 1;
         const LEVELS_PER_PAGE = 5;
-
-        // --- Unlock Progress ---
         const STORAGE_KEY = 'carGameHighestUnlockedLevel';
         let highestUnlockedLevel = 1;
-        function loadUnlockProgress() { try { const storedLevel = localStorage.getItem(STORAGE_KEY); if (storedLevel) { highestUnlockedLevel = parseInt(storedLevel, 10); if (isNaN(highestUnlockedLevel) || highestUnlockedLevel < 1) highestUnlockedLevel = 1; } else { highestUnlockedLevel = 1; localStorage.setItem(STORAGE_KEY, highestUnlockedLevel.toString()); } console.log("Highest unlocked level loaded:", highestUnlockedLevel); } catch (e) { console.error("LocalStorage access error.", e); highestUnlockedLevel = 1; } }
-        function saveUnlockProgress(levelToUnlock) { if (levelToUnlock > highestUnlockedLevel) { highestUnlockedLevel = levelToUnlock; try { localStorage.setItem(STORAGE_KEY, highestUnlockedLevel.toString()); console.log("Progress saved:", highestUnlockedLevel); } catch (e) { console.error("LocalStorage save error.", e); } } }
-
-        // --- Game State ---
         let timeElapsed = 0; let score = 0; let gameOver = false; let gameRunning = false; let lastTime = 0;
         let isInvincible = false; const CONTINUE_COST = 150; const INVINCIBILITY_DURATION = 2000;
         let isAutopilotActive = false; let autopilotEndTime = 0; const AUTOPILOT_DURATION = 15000;
@@ -168,36 +157,43 @@
         let backgroundMusicResumeTime = 0; let originalCarSpeed = 0; const AUTOPILOT_CAR_SPEED_MULTIPLIER = 2.5;
         let autopilotSpeedWarningActive = false; let originalSliderValue = 1.0; let originalGameSpeedMultiplier = 1.0;
         let isSeekingSafeSpot = false; let safeSpotTargetX = null;
-
-        // --- Game Element Variables (sized in resizeGameArea) ---
         let carWidth, carHeight, coinWidth, coinHeight, superCoinWidth, superCoinHeight, autoCoinWidth, autoCoinHeight, enemyCarWidth, enemyCarHeight;
         let ABSOLUTE_BASE_ROAD_SPEED, ABSOLUTE_BASE_ENEMY_SPEED, ABSOLUTE_BASE_COIN_SPEED, ABSOLUTE_BASE_SUPERCOIN_SPEED;
-        let ABSOLUTE_BASE_ENEMY_SPAWN_RATE = 0.011; let ABSOLUTE_BASE_COIN_SPAWN_RATE = 0.02; let ABSOLUTE_BASE_SUPERCOIN_SPAWN_RATE = 0.005; // Base rates don't depend on size
-
-        const car = { x: 0, y: 0, speed: 0 }; // Positioned later
+        let ABSOLUTE_BASE_ENEMY_SPAWN_RATE = 0.011; let ABSOLUTE_BASE_COIN_SPAWN_RATE = 0.02; let ABSOLUTE_BASE_SUPERCOIN_SPAWN_RATE = 0.005;
+        const car = { x: 0, y: 0, speed: 0 };
         const enemyCars = []; const coins = []; const superCoins = []; const autoCoins = [];
-
-        // --- Image Loading ---
+        let gameSpeedMultiplier = 1.0; let roadSpeed, enemySpeed, coinSpeed, superCoinSpeed; let enemySpawnRate, coinSpawnRate, superCoinSpawnRate; let roadY = 0; let moveLeft = false; let moveRight = false;
         const images = {}; const imageSources = [ { name: 'car', src: 'car.png' }, { name: 'enemyCar', src: 'carup.png' }, { name: 'road', src: 'road.png' }, { name: 'coin', src: 'coin.png' }, { name: 'superCoin', src: 'supercoin.png' }, { name: 'autoCoin', src: 'autocoin.png' }, { name: 'autoCar', src: 'autocar.png' } ];
         let assetsLoaded = false;
+
+        // --- Core Functions ---
+
+        function getContext() {
+            if (!ctx) {
+                ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    alert("Fatal Error: Could not get canvas context.");
+                    throw new Error("Canvas context not available.");
+                }
+                 console.log("Canvas context obtained.");
+            }
+             return ctx;
+        }
+
+
+        function loadUnlockProgress() { try { const storedLevel = localStorage.getItem(STORAGE_KEY); if (storedLevel) { highestUnlockedLevel = parseInt(storedLevel, 10); if (isNaN(highestUnlockedLevel) || highestUnlockedLevel < 1) highestUnlockedLevel = 1; } else { highestUnlockedLevel = 1; localStorage.setItem(STORAGE_KEY, highestUnlockedLevel.toString()); } console.log("Highest unlocked level loaded:", highestUnlockedLevel); } catch (e) { console.error("LocalStorage access error.", e); highestUnlockedLevel = 1; } }
+        function saveUnlockProgress(levelToUnlock) { if (levelToUnlock > highestUnlockedLevel) { highestUnlockedLevel = levelToUnlock; try { localStorage.setItem(STORAGE_KEY, highestUnlockedLevel.toString()); console.log("Progress saved:", highestUnlockedLevel); } catch (e) { console.error("LocalStorage save error.", e); } } }
         function loadImage(imgData) { return new Promise((resolve, reject) => { const img = new Image(); img.onload = () => { images[imgData.name] = img; resolve(img); }; img.onerror = () => { console.error(` X Failed to load image: ${imgData.src}`); images[imgData.name] = null; reject(new Error(`Failed to load ${imgData.src}`)); }; img.src = imgData.src; }); }
         async function preloadImages() { if (assetsLoaded) return Promise.resolve(); console.log("Starting asset preloading..."); loadingMessage.innerText = "Loading Assets..."; loadingMessage.style.display = 'block'; showMenuButton.disabled = true; const promises = imageSources.map(loadImage); try { await Promise.all(promises); const essentialImages = ['car', 'enemyCar', 'road', 'autoCar']; const allEssentialLoaded = essentialImages.every(name => images[name] != null); if (allEssentialLoaded) { console.log("All essential images loaded successfully."); assetsLoaded = true; loadingMessage.style.display = 'none'; showMenuButton.disabled = false; return Promise.resolve(); } else { console.error("Essential images failed to load."); loadingMessage.innerText = "Error: Failed to load essential assets!"; essentialImages.forEach(name => { if(!images[name]) console.error(` - Missing essential image: ${name}`) }); return Promise.reject("Essential image load failure"); } } catch (error) { console.error("Error during image preloading:", error); loadingMessage.innerText = "Fatal Error Loading Assets!"; return Promise.reject(error); } }
 
-        // --- Resize Game Area and Calculate Sizes --- NEW FUNCTION ---
-        function resizeGameArea() {
-            const aspectRatio = 400 / 600;
-            const screenWidth = window.innerWidth; const screenHeight = window.innerHeight;
-            let newWidth, newHeight;
+        // Setup sizes based on internal canvas dimensions
+        function setupGameDimensionsAndElements() {
+            console.log("Setting up game dimensions and elements...");
+            // Apply internal resolution
+            canvas.width = INTERNAL_CANVAS_WIDTH;
+            canvas.height = INTERNAL_CANVAS_HEIGHT;
 
-            newHeight = screenHeight; newWidth = newHeight * aspectRatio;
-            if (newWidth > screenWidth) { newWidth = screenWidth; newHeight = newWidth / aspectRatio; }
-
-            console.log(`Screen: ${screenWidth}x${screenHeight} => Game Area: ${newWidth.toFixed(0)}x${newHeight.toFixed(0)}`);
-
-            canvas.width = newWidth; canvas.height = newHeight;
-            gameArea.style.width = `${newWidth}px`; gameArea.style.height = `${newHeight}px`;
-
-            // Define size-dependent constants & initial values
+            // Calculate sizes based on internal resolution
             carWidth = canvas.width * 0.125; carHeight = carWidth * 1.8;
             coinWidth = canvas.width * 0.05; coinHeight = coinWidth;
             superCoinWidth = canvas.width * 0.075; superCoinHeight = superCoinWidth;
@@ -206,21 +202,15 @@
             car.speed = canvas.width * 0.015; originalCarSpeed = car.speed;
             ABSOLUTE_BASE_ROAD_SPEED = canvas.height * 0.007; ABSOLUTE_BASE_ENEMY_SPEED = canvas.height * 0.008;
             ABSOLUTE_BASE_COIN_SPEED = canvas.height * 0.006; ABSOLUTE_BASE_SUPERCOIN_SPEED = canvas.height * 0.006;
-            car.x = canvas.width / 2 - carWidth / 2; car.y = canvas.height - carHeight - 15;
-            if(gameRunning) { updateGameSpeed(); }
-            console.log(`Resized. Base car speed: ${car.speed}`);
+
+            // Reset car position
+            car.x = canvas.width / 2 - carWidth / 2;
+            car.y = canvas.height - carHeight - 15;
+            console.log(`Dimensions set. Base car speed: ${car.speed}`);
         }
 
-
-        // --- Dynamic Level Configuration ---
         function getLevelConfig(levelNum) { const baseTargetScore = 300; const baseEnemyRateMult = 0.6; const baseCoinRateMult = 1.3; const scoreIncreasePerLevel = 50 + (levelNum * 25); const enemyRateIncrease = 0.03 * levelNum; const coinRateDecrease = 0.02 * levelNum; let config = { level: levelNum, targetScore: Math.floor(baseTargetScore + scoreIncreasePerLevel * (levelNum - 1)), enemyRateMultiplier: Math.max(0.1, baseEnemyRateMult + enemyRateIncrease), coinRateMultiplier: Math.max(0.1, baseCoinRateMult - coinRateDecrease) }; return config; }
-
-        // --- Speeds, Rates, Scrolling, Controls, Audio ---
-        let gameSpeedMultiplier = 1.0; let roadSpeed, enemySpeed, coinSpeed, superCoinSpeed; let enemySpawnRate, coinSpawnRate, superCoinSpawnRate; let roadY = 0; let moveLeft = false; let moveRight = false;
-        backgroundMusic.volume = 0.4; autopilotMusic.volume = 0.6; gameOverSound.volume = 0.7; coinSound.volume = 0.6; superCoinSound.volume = 0.7; levelWinSound.volume = 0.8; continueSound.volume = 0.9;
         function playSound(soundElement) { if(soundElement) { soundElement.currentTime = 0; soundElement.play().catch(e => {}); } }
-
-        // --- Update Speeds Based on Current gameSpeedMultiplier ---
         function updateGameSpeed() { roadSpeed = ABSOLUTE_BASE_ROAD_SPEED * gameSpeedMultiplier; enemySpeed = ABSOLUTE_BASE_ENEMY_SPEED * gameSpeedMultiplier; coinSpeed = ABSOLUTE_BASE_COIN_SPEED * gameSpeedMultiplier; superCoinSpeed = ABSOLUTE_BASE_SUPERCOIN_SPEED * gameSpeedMultiplier; enemySpawnRate = ABSOLUTE_BASE_ENEMY_SPAWN_RATE * currentLevelConfig.enemyRateMultiplier * gameSpeedMultiplier; coinSpawnRate = ABSOLUTE_BASE_COIN_SPAWN_RATE * currentLevelConfig.coinRateMultiplier * gameSpeedMultiplier; superCoinSpawnRate = ABSOLUTE_BASE_SUPERCOIN_SPAWN_RATE * gameSpeedMultiplier; }
 
         // --- Drawing Functions ---
@@ -239,7 +229,7 @@
 
         // --- UI Visibility Control ---
         function hideAllOverlays() { levelSelectionScreen.style.display = 'none'; levelCompleteScreen.style.display = 'none'; gameOverScreen.style.display = 'none'; loadingMessage.style.display = 'none'; winningVideoContainer.style.display = 'none'; levelSearchNotification.style.display = 'none'; if(notificationTimeout) clearTimeout(notificationTimeout); }
-        function showGameScreen() { gameArea.style.display = 'block'; timerDisplay.style.display = 'block'; scoreDisplay.style.display = 'block'; controls.style.display = 'flex'; speedControlDiv.style.display = 'flex'; }
+        function showGameScreen() { gameArea.style.display = 'flex'; timerDisplay.style.display = 'block'; scoreDisplay.style.display = 'block'; controls.style.display = 'flex'; speedControlDiv.style.display = 'flex'; }
         function hideGameScreen() { gameArea.style.display = 'none'; timerDisplay.style.display = 'none'; scoreDisplay.style.display = 'none'; controls.style.display = 'none'; speedControlDiv.style.display = 'none'; }
 
         // --- Show Level Selection ---
@@ -276,42 +266,112 @@
          function handleLevelSearch() { if (notificationTimeout) clearTimeout(notificationTimeout); levelSearchNotification.style.display = 'none'; levelSearchNotification.textContent = ''; const searchedLevelStr = levelSearchInput.value; if (!searchedLevelStr) return; const searchedLevel = parseInt(searchedLevelStr, 10); if (isNaN(searchedLevel) || searchedLevel <= 0) { levelSearchNotification.textContent = "Invalid Level Number"; levelSearchNotification.style.display = 'block'; notificationTimeout = setTimeout(() => { levelSearchNotification.style.display = 'none'; notificationTimeout = null; }, 1500); levelSearchInput.value = ''; return; } if (searchedLevel <= highestUnlockedLevel) { const targetPage = Math.ceil(searchedLevel / LEVELS_PER_PAGE); currentPage = targetPage; showLevelSelection(); console.log(`Navigating to page ${currentPage} for unlocked level ${searchedLevel}`); } else { console.log(`Level ${searchedLevel} is locked (Highest unlocked: ${highestUnlockedLevel}).`); levelSearchNotification.textContent = `Level ${searchedLevel} NOW LOCKED`; levelSearchNotification.style.display = 'block'; notificationTimeout = setTimeout(() => { levelSearchNotification.style.display = 'none'; notificationTimeout = null; }, 1500); const lastUnlockedPage = Math.ceil(highestUnlockedLevel / LEVELS_PER_PAGE); if (currentPage !== lastUnlockedPage) { currentPage = lastUnlockedPage; showLevelSelection(); } } levelSearchInput.value = ''; }
 
         // --- Game Loop ---
-        function gameLoop(currentTime) { if (!gameRunning) return; const now = Date.now(); if (isAutopilotActive) { if (now >= autopilotEndTime) { deactivateAutopilotEffects(); } else if (!autopilotSpeedWarningActive && now >= autopilotEndTime - 2000) { autopilotSpeedWarningActive = true; if(originalCarSpeed > 0 && car.speed !== originalCarSpeed) { car.speed = originalCarSpeed; console.log("Autopilot ending: Restored CAR speed"); } if(gameSpeedMultiplier !== originalGameSpeedMultiplier){ gameSpeedMultiplier = originalGameSpeedMultiplier; console.log("Autopilot ending: Restored GAME speed mult"); updateGameSpeed(); } speedSlider.value = originalSliderValue; console.log("Autopilot ending: Restored SLIDER value"); findAndSetSafeSpot(); } } ctx.clearRect(0, 0, canvas.width, canvas.height); if (!gameOver) { if (isSeekingSafeSpot && safeSpotTargetX !== null) { const carCenterX = car.x + carWidth / 2; const targetDiff = safeSpotTargetX - carCenterX; const moveThreshold = car.speed * 0.5; if (Math.abs(targetDiff) > moveThreshold) { if (targetDiff > 0 && car.x < canvas.width - carWidth) car.x += car.speed; else if (targetDiff < 0 && car.x > 0) car.x -= car.speed; } else { isSeekingSafeSpot = false; } car.x = Math.max(0, Math.min(canvas.width - carWidth, car.x)); } else if (isAutopilotActive) { const autoMove = calculateAutopilotMove(); if (autoMove === -1 && car.x > 0) car.x -= car.speed; else if (autoMove === 1 && car.x < canvas.width - carWidth) car.x += car.speed; car.x = Math.max(0, Math.min(canvas.width - carWidth, car.x)); } else { if (moveLeft && car.x > 0) car.x -= car.speed; if (moveRight && car.x < canvas.width - carWidth) car.x += car.speed; car.x = Math.max(0, Math.min(canvas.width - carWidth, car.x)); } updateEnemyCars(); if (!gameOver) updateCoins(); if (!gameOver) updateSuperCoins(); if (!gameOver) updateAutoCoins(); } if (!gameOver && score >= targetScore) { handleLevelWin(); return; } try { drawRoad(); drawCoins(); drawSuperCoins(); drawAutoCoins(); drawEnemyCars(); drawCar(); } catch (e) { console.error("Error during drawing phase:", e); if (!gameOver) triggerFinalGameOver(); return; } if (!gameOver) { timeElapsed++; if (timeElapsed % 60 === 0) { timerDisplay.innerText = `Time: ${Math.floor(timeElapsed / 60)}s`; } } requestAnimationFrame(gameLoop); }
+        function gameLoop(currentTime) {
+            if (!gameRunning) return;
+            const now = Date.now();
+            try { // Add a try-catch around the whole loop for critical errors
+                // Autopilot Checks
+                if (isAutopilotActive) {
+                    if (now >= autopilotEndTime) { deactivateAutopilotEffects(); } // Full deactivation
+                    else if (!autopilotSpeedWarningActive && now >= autopilotEndTime - 2000) { // Speed/Slider/Safe Spot warning check
+                        autopilotSpeedWarningActive = true;
+                        if(originalCarSpeed > 0 && car.speed !== originalCarSpeed) { car.speed = originalCarSpeed; console.log("Autopilot ending: Restored CAR speed"); }
+                        if(gameSpeedMultiplier !== originalGameSpeedMultiplier){ gameSpeedMultiplier = originalGameSpeedMultiplier; console.log("Autopilot ending: Restored GAME speed mult"); updateGameSpeed(); } // Apply speed change
+                        speedSlider.value = originalSliderValue; // Restore slider value (still disabled)
+                        console.log("Autopilot ending: Restored SLIDER value");
+                        findAndSetSafeSpot(); // Find safe spot during warning
+                    }
+                }
+
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // Update Layer
+                if (!gameOver) {
+                    // Movement Logic
+                    if (isSeekingSafeSpot && safeSpotTargetX !== null) { // Prioritize seeking safe spot
+                        const carCenterX = car.x + carWidth / 2; const targetDiff = safeSpotTargetX - carCenterX; const moveThreshold = car.speed * 0.5;
+                        if (Math.abs(targetDiff) > moveThreshold) { if (targetDiff > 0 && car.x < canvas.width - carWidth) car.x += car.speed; else if (targetDiff < 0 && car.x > 0) car.x -= car.speed; }
+                        else { isSeekingSafeSpot = false; } // Stop seeking
+                        car.x = Math.max(0, Math.min(canvas.width - carWidth, car.x));
+                    } else if (isAutopilotActive) { // Normal autopilot movement
+                        const autoMove = calculateAutopilotMove();
+                        if (autoMove === -1 && car.x > 0) car.x -= car.speed; else if (autoMove === 1 && car.x < canvas.width - carWidth) car.x += car.speed;
+                        car.x = Math.max(0, Math.min(canvas.width - carWidth, car.x));
+                    } else { // Player control
+                        if (moveLeft && car.x > 0) car.x -= car.speed; if (moveRight && car.x < canvas.width - carWidth) car.x += car.speed;
+                        car.x = Math.max(0, Math.min(canvas.width - carWidth, car.x));
+                    }
+                    // Other Updates
+                    updateEnemyCars(); if (!gameOver) updateCoins(); if (!gameOver) updateSuperCoins(); if (!gameOver) updateAutoCoins();
+                }
+
+                // Win Condition Check
+                if (!gameOver && score >= targetScore) { handleLevelWin(); return; }
+
+                // Draw Layer
+                drawRoad(); drawCoins(); drawSuperCoins(); drawAutoCoins(); drawEnemyCars(); drawCar();
+
+                // Update Time UI
+                if (!gameOver) { timeElapsed++; if (timeElapsed % 60 === 0) { timerDisplay.innerText = `Time: ${Math.floor(timeElapsed / 60)}s`; } }
+
+                requestAnimationFrame(gameLoop); // Request next frame only if no critical error
+
+            } catch (loopError) {
+                 console.error("CRITICAL ERROR in game loop:", loopError);
+                 alert("A critical error occurred. Please refresh the page.");
+                 // Optionally try to stop audio or do other cleanup
+                 gameRunning = false; // Stop the loop
+                 backgroundMusic.pause();
+                 autopilotMusic.pause();
+            }
+        }
+
 
         // --- Start Game Function ---
         function startGame(levelNum) {
-            console.log(`Starting Level ${levelNum}...`);
-            if (!assetsLoaded) { console.error("Assets not loaded!"); alert("Error: Game assets are not loaded. Please try again."); showMenuButton.style.display = 'block'; return; }
+            console.log("Attempting to start Level", levelNum);
+            if (!assetsLoaded) { console.error("Assets not loaded! Cannot start game."); alert("Error: Game assets are not loaded. Please try again."); showMenuButton.style.display = 'block'; return; }
+            if (!ctx) { console.error("Canvas context not ready!"); alert("Error: Graphics cannot be drawn. Please refresh."); return; }
             if (gameRunning) { gameRunning = false; console.warn("Stopping previous game loop."); }
-            hideAllOverlays(); showMenuButton.style.display = 'none';
-            resizeGameArea(); // Resize canvas/container and calculate element sizes
-            showGameScreen(); // Display the game area
 
-            currentLevel = levelNum;
-            currentLevelConfig = getLevelConfig(levelNum);
-            if (!currentLevelConfig) { console.error(`Could not generate config for level ${levelNum}!`); alert("Error loading level configuration."); showLevelSelection(); return; }
-            targetScore = currentLevelConfig.targetScore;
-            console.log(`Level ${currentLevel} Config Loaded. Target: ${targetScore}, EnemyRate: ${currentLevelConfig.enemyRateMultiplier.toFixed(2)}`);
-            // Reset Game State
-            score = 0; timeElapsed = 0; gameOver = false; gameRunning = false; isInvincible = false;
-            isAutopilotActive = false; autopilotEndTime = 0; autopilotSpeedWarningActive = false; isSeekingSafeSpot = false; safeSpotTargetX = null;
-            nextAutoCoinSpawnTime = Date.now() + AUTOCOIN_INITIAL_SPAWN_DELAY;
-            backgroundMusicResumeTime = 0;
-            car.speed = originalCarSpeed; // Use speed calculated in resizeGameArea
-            originalSliderValue = 1.0; speedSlider.value = 1.0; speedSlider.disabled = false;
-            gameSpeedMultiplier = 1.0; originalGameSpeedMultiplier = 1.0;
-            // Car position reset in resizeGameArea
-            enemyCars.length = 0; coins.length = 0; superCoins.length = 0; autoCoins.length = 0;
-            scoreDisplay.textContent = `Score: ${score} / ${targetScore}`; // Show target
-            timerDisplay.innerText = `Time: 0s`; moveLeft = false; moveRight = false; roadY = 0;
-            updateGameSpeed(); // Apply initial game speed
-            autopilotMusic.pause(); autopilotMusic.currentTime = 0;
-            backgroundMusic.currentTime = 0; backgroundMusic.play().catch(error => console.warn("Music play failed:", error));
-            gameRunning = true; lastTime = performance.now(); requestAnimationFrame(gameLoop);
+            try { // Wrap start game logic in try-catch
+                hideAllOverlays(); showMenuButton.style.display = 'none';
+                setupGameDimensionsAndElements(); // Setup sizes based on internal resolution
+                showGameScreen(); // Display the game area
+
+                currentLevel = levelNum;
+                currentLevelConfig = getLevelConfig(levelNum);
+                if (!currentLevelConfig) { throw new Error(`Could not generate config for level ${levelNum}`); }
+                targetScore = currentLevelConfig.targetScore;
+                console.log(`Level ${currentLevel} Config Loaded. Target: ${targetScore}, EnemyRate: ${currentLevelConfig.enemyRateMultiplier.toFixed(2)}`);
+                // Reset Game State
+                score = 0; timeElapsed = 0; gameOver = false; gameRunning = false; isInvincible = false;
+                isAutopilotActive = false; autopilotEndTime = 0; autopilotSpeedWarningActive = false; isSeekingSafeSpot = false; safeSpotTargetX = null;
+                nextAutoCoinSpawnTime = Date.now() + AUTOCOIN_INITIAL_SPAWN_DELAY;
+                backgroundMusicResumeTime = 0;
+                // car.speed and originalCarSpeed set in setupGameDimensionsAndElements
+                originalSliderValue = 1.0; speedSlider.value = 1.0; speedSlider.disabled = false;
+                gameSpeedMultiplier = 1.0; originalGameSpeedMultiplier = 1.0;
+                // Car position reset in setupGameDimensionsAndElements
+                enemyCars.length = 0; coins.length = 0; superCoins.length = 0; autoCoins.length = 0;
+                scoreDisplay.textContent = `Score: ${score} / ${targetScore}`; // Show target
+                timerDisplay.innerText = `Time: 0s`; moveLeft = false; moveRight = false; roadY = 0;
+                updateGameSpeed(); // Apply initial game speed
+                autopilotMusic.pause(); autopilotMusic.currentTime = 0;
+                backgroundMusic.currentTime = 0; backgroundMusic.play().catch(error => console.warn("Music play failed:", error));
+                gameRunning = true; lastTime = performance.now(); console.log("First frame requested.");
+                requestAnimationFrame(gameLoop);
+            } catch (startError) {
+                console.error("CRITICAL ERROR during startGame:", startError);
+                alert("An error occurred starting the level. Please refresh.");
+                hideGameScreen(); // Hide broken game screen
+                showMenuButton.style.display = 'block'; // Show start button again
+                showMenuButton.disabled = false;
+            }
         }
 
         // --- Event Listeners ---
-        showMenuButton.addEventListener('click', () => { console.log("Show Menu Button clicked."); preloadImages().then(() => { console.log("Preloading successful."); currentPage = Math.ceil(highestUnlockedLevel / LEVELS_PER_PAGE); calculateInitialSizes(); showLevelSelection(); }).catch((err) => { console.error("Preloading failed, cannot show menu.", err); }); });
+        showMenuButton.addEventListener('click', () => { console.log("Show Menu Button clicked."); preloadImages().then(() => { console.log("Preloading successful."); currentPage = Math.ceil(highestUnlockedLevel / LEVELS_PER_PAGE); setupGameDimensionsAndElements(); /* Calculate sizes needed for menu */ showLevelSelection(); }).catch((err) => { console.error("Preloading failed, cannot show menu.", err); }); });
         document.addEventListener('keydown', (e) => { if (isAutopilotActive || !gameRunning || gameOver) return; if (e.key === "ArrowLeft" || e.key === "a") moveLeft = true; if (e.key === "ArrowRight" || e.key === "d") moveRight = true; });
         document.addEventListener('keyup', (e) => { if (isAutopilotActive || !gameRunning || gameOver) return; if (e.key === "ArrowLeft" || e.key === "a") moveLeft = false; if (e.key === "ArrowRight" || e.key === "d") moveRight = false; });
         function handleControlStart(isLeft, event) { if (isAutopilotActive || !gameRunning || gameOver) return; event.preventDefault(); if (isLeft) moveLeft = true; else moveRight = true; }
@@ -332,10 +392,21 @@
         document.getElementById('nextPageButton').addEventListener('click', () => { const endLevel = (currentPage - 1) * LEVELS_PER_PAGE + LEVELS_PER_PAGE; const firstLevelOfNextPage = endLevel + 1; if (highestUnlockedLevel >= firstLevelOfNextPage || highestUnlockedLevel + 1 === firstLevelOfNextPage) { currentPage++; levelSearchInput.value = ''; levelSearchNotification.style.display = 'none'; if(notificationTimeout) clearTimeout(notificationTimeout); showLevelSelection(); } });
         levelSearchButton.addEventListener('click', handleLevelSearch);
         levelSearchInput.addEventListener('keydown', (event) => { if (event.key === "Enter") { event.preventDefault(); handleLevelSearch(); } });
-        window.addEventListener('resize', () => { if(gameRunning) { resizeGameArea(); }}); // Resize during game if needed
 
         // --- Initial Setup ---
-        window.onload = () => { console.log("Window loaded."); loadUnlockProgress(); currentPage = Math.ceil(highestUnlockedLevel / LEVELS_PER_PAGE); calculateInitialSizes(); /* Calc sizes needed for menu */ hideGameScreen(); hideAllOverlays(); showMenuButton.style.display = 'block'; console.log("Initial setup complete. Waiting for user interaction."); };
+        window.onload = () => {
+             console.log("Window loaded.");
+             // Get context early to catch errors
+             getContext();
+             loadUnlockProgress();
+             currentPage = Math.ceil(highestUnlockedLevel / LEVELS_PER_PAGE);
+             // Calculate sizes once for menu display, startGame will redo it
+             setupGameDimensionsAndElements();
+             hideGameScreen(); hideAllOverlays();
+             showMenuButton.style.display = 'block';
+             console.log("Initial setup complete. Waiting for user interaction.");
+        };
+         // Removed resize listener for stability
 
     </script>
 </body>
