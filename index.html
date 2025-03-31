@@ -1,46 +1,220 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Car Racing 2D - Fullscreen Mobile</title>
+    <title>Car Racing 2D - Level Search (Strict Unlock)</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <style>
         /* --- Basic Styles --- */
-        body { margin: 0; overflow: hidden; background: #0a0e21; color: #00ffcc; font-family: 'Orbitron', sans-serif; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; -webkit-user-select: none; user-select: none; }
-        #gameArea { position: relative; width: fit-content; height: fit-content; max-width: 100%; display: none; border: 5px solid #00ffcc; box-shadow: 0 0 30px #00ffcc, 0 0 60px #ff00ff; border-radius: 10px; background-color: #333; overflow: hidden; }
-        canvas { display: block; touch-action: none; max-width: 100%; box-sizing: border-box; }
-        #timer, #score, #speedControl, #controls { position: absolute; z-index: 5; box-sizing: border-box; }
-        #timer, #score, #speedControl { background: rgba(0, 0, 0, 0.8); color: #00ffcc; padding: 8px 15px; border: 2px solid #ff00ff; border-radius: 5px; font-size: 14px; text-shadow: 0 0 8px #00ffcc; display: none; }
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #0a0e21;
+            color: #00ffcc;
+            font-family: 'Orbitron', sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        #gameArea {
+            position: relative;
+            width: fit-content;
+            height: fit-content;
+            max-width: 100%;
+            display: none;
+            border: 5px solid #00ffcc;
+            box-shadow: 0 0 30px #00ffcc, 0 0 60px #ff00ff;
+            border-radius: 10px;
+            background-color: #333;
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+            touch-action: none;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+        #timer,
+        #score,
+        #speedControl,
+        #controls {
+            position: absolute;
+            z-index: 5;
+            box-sizing: border-box;
+        }
+        #timer,
+        #score,
+        #speedControl {
+            background: rgba(0, 0, 0, 0.8);
+            color: #00ffcc;
+            padding: 8px 15px;
+            border: 2px solid #ff00ff;
+            border-radius: 5px;
+            font-size: 14px;
+            text-shadow: 0 0 8px #00ffcc;
+            display: none;
+        }
         #timer { top: 10px; right: 10px; }
         #score { top: 10px; left: 10px; line-height: 1.2; }
-        #speedControl { top: 50px; right: 10px; width: 180px; left: auto; display: none; align-items: center; justify-content: space-between; padding: 5px 10px; }
+        #speedControl {
+            top: 50px;
+            right: 10px;
+            width: 180px;
+            left: auto;
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            padding: 5px 10px;
+        }
         #speedControl label { margin-right: 10px; white-space: nowrap; }
-        #speedSlider { width: 100%; cursor: pointer; appearance: none; height: 8px; background: linear-gradient(90deg, #00ffcc, #ff00ff); border-radius: 5px; outline: none; }
+        #speedSlider {
+            width: 100%;
+            cursor: pointer;
+            appearance: none;
+            height: 8px;
+            background: linear-gradient(90deg, #00ffcc, #ff00ff);
+            border-radius: 5px;
+            outline: none;
+        }
         #speedSlider:disabled { cursor: not-allowed; opacity: 0.6; }
-        #speedSlider::-webkit-slider-thumb { appearance: none; width: 20px; height: 20px; background: #fff; border: 2px solid #ff00ff; border-radius: 50%; cursor: pointer; }
+        #speedSlider::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #fff;
+            border: 2px solid #ff00ff;
+            border-radius: 50%;
+            cursor: pointer;
+        }
         #speedSlider:disabled::-webkit-slider-thumb { cursor: not-allowed; background: #aaa; }
-        #speedSlider::-moz-range-thumb { width: 18px; height: 18px; background: #fff; border: 2px solid #ff00ff; border-radius: 50%; cursor: pointer; }
+        #speedSlider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            background: #fff;
+            border: 2px solid #ff00ff;
+            border-radius: 50%;
+            cursor: pointer;
+        }
         #speedSlider:disabled::-moz-range-thumb { cursor: not-allowed; background: #aaa; }
-        #controls { position: absolute; bottom: 15px; width: 100%; display: none; justify-content: space-between; align-items: center; z-index: 5; padding: 0 20px; box-sizing: border-box; }
-        .control-btn { background: linear-gradient(45deg, #ff00ff, #00ffcc); color: #fff; border: none; padding: 12px 18px; cursor: pointer; font-size: 20px; border-radius: 10px; margin: 5px; box-shadow: 0 0 15px #ff00ff, 0 0 25px #00ffcc; transition: transform 0.15s, box-shadow 0.15s; display: inline-flex; justify-content: center; align-items: center; min-width: 70px; min-height: 55px; touch-action: manipulation; }
+        #controls {
+            position: absolute;
+            bottom: 15px;
+            width: 100%;
+            display: none;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 5;
+            padding: 0 20px;
+            box-sizing: border-box;
+        }
+        .control-btn {
+            background: linear-gradient(45deg, #ff00ff, #00ffcc);
+            color: #fff;
+            border: none;
+            padding: 12px 18px;
+            cursor: pointer;
+            font-size: 20px;
+            border-radius: 10px;
+            margin: 5px;
+            box-shadow: 0 0 15px #ff00ff, 0 0 25px #00ffcc;
+            transition: transform 0.15s, box-shadow 0.15s;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            min-width: 70px;
+            min-height: 55px;
+            touch-action: manipulation;
+        }
         .control-btn img { height: 30px; vertical-align: middle; pointer-events: none; }
-        .control-btn:hover { transform: scale(1.05); } .control-btn:active { transform: scale(0.98); }
-        #loadingMessage { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #00ffcc; font-size: 18px; text-shadow: 0 0 10px #00ffcc; display: none; z-index: 20; background: rgba(0,0,0,0.7); padding: 15px 25px; border-radius: 8px; }
-        #showMenuButton { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: linear-gradient(45deg, #00ffcc, #ff00ff); color: #1a2a6c; font-weight: bold; border: none; padding: 20px 40px; cursor: pointer; font-size: 24px; border-radius: 10px; box-shadow: 0 0 20px #00ffcc, 0 0 35px #ff00ff; transition: transform 0.2s, box-shadow 0.2s; z-index: 10; display: block; }
-        #showMenuButton:hover { transform: translate(-50%, -50%) scale(1.1); } #showMenuButton:active { transform: translate(-50%, -50%) scale(0.95); }
-        .screen { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(10, 14, 33, 0.95); color: #00ffcc; padding: 25px 35px; border: 3px solid #ff00ff; border-radius: 15px; text-align: center; z-index: 15; display: none; box-shadow: 0 0 25px #ff00ff; min-width: 320px; box-sizing: border-box; }
-        .screen h2 { margin-top: 0; font-size: 1.8em; text-shadow: 0 0 10px #00ffcc; margin-bottom: 20px; } .screen p { font-size: 1.1em; margin-bottom: 20px; }
-        .screen button { background: linear-gradient(45deg, #00ffcc, #ff00ff); color: #1a2a6c; font-weight: bold; border: none; padding: 10px 20px; cursor: pointer; font-size: 1em; border-radius: 8px; margin: 8px; box-shadow: 0 0 10px #00ffcc, 0 0 15px #ff00ff; transition: transform 0.2s, box-shadow 0.2s; min-width: 120px; }
+        .control-btn:hover { transform: scale(1.05); }
+        .control-btn:active { transform: scale(0.98); }
+        #loadingMessage {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            color: #00ffcc;
+            font-size: 18px;
+            text-shadow: 0 0 10px #00ffcc;
+            display: none;
+            z-index: 20;
+            background: rgba(0,0,0,0.7);
+            padding: 15px 25px;
+            border-radius: 8px;
+        }
+        #showMenuButton {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(45deg, #00ffcc, #ff00ff);
+            color: #1a2a6c;
+            font-weight: bold;
+            border: none;
+            padding: 20px 40px;
+            cursor: pointer;
+            font-size: 24px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px #00ffcc, 0 0 35px #ff00ff;
+            transition: transform 0.2s, box-shadow 0.2s;
+            z-index: 10;
+            display: block;
+        }
+        #showMenuButton:hover { transform: translate(-50%, -50%) scale(1.1); }
+        #showMenuButton:active { transform: translate(-50%, -50%) scale(0.95); }
+        .screen {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(10, 14, 33, 0.95);
+            color: #00ffcc;
+            padding: 25px 35px;
+            border: 3px solid #ff00ff;
+            border-radius: 15px;
+            text-align: center;
+            z-index: 15;
+            display: none;
+            box-shadow: 0 0 25px #ff00ff;
+            min-width: 320px;
+            box-sizing: border-box;
+        }
+        .screen h2 { margin-top: 0; font-size: 1.8em; text-shadow: 0 0 10px #00ffcc; margin-bottom: 20px; }
+        .screen p { font-size: 1.1em; margin-bottom: 20px; }
+        .screen button {
+            background: linear-gradient(45deg, #00ffcc, #ff00ff);
+            color: #1a2a6c;
+            font-weight: bold;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 1em;
+            border-radius: 8px;
+            margin: 8px;
+            box-shadow: 0 0 10px #00ffcc, 0 0 15px #ff00ff;
+            transition: transform 0.2s, box-shadow 0.2s;
+            min-width: 120px;
+        }
         .screen button:hover { transform: scale(1.08); box-shadow: 0 0 15px #00ffcc, 0 0 25px #ff00ff; }
         .screen button:disabled { background: grey; color: #aaa; cursor: not-allowed; box-shadow: none; transform: none; }
         #levelSelectionScreen .level-buttons-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 10px; max-width: 400px; }
-        .level-button { background: linear-gradient(45deg, #00aaff, #00ffcc); color: #0a0e21; font-weight: bold; border: 2px solid #00ffcc; padding: 10px 15px; cursor: pointer; font-size: 0.9em; line-height: 1.3; border-radius: 10px; box-shadow: 0 0 10px #00aaff, 0 0 15px #00ffcc; transition: transform 0.2s, box-shadow 0.2s; width: 110px; height: 65px; position: relative; white-space: pre-line; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .level-button {
+            background: linear-gradient(45deg, #00aaff, #00ffcc); color: #0a0e21; font-weight: bold; border: 2px solid #00ffcc;
+            padding: 10px 15px; cursor: pointer; font-size: 0.9em; line-height: 1.3; border-radius: 10px;
+            box-shadow: 0 0 10px #00aaff, 0 0 15px #00ffcc; transition: transform 0.2s, box-shadow 0.2s;
+            width: 110px; height: 65px; position: relative; white-space: pre-line; display: flex;
+            flex-direction: column; justify-content: center; align-items: center;
+         }
         .level-button span { font-size: 0.8em; opacity: 0.9; margin-top: 3px; }
         .level-button:hover { transform: scale(1.1); box-shadow: 0 0 15px #00aaff, 0 0 25px #00ffcc; }
         .level-button.locked { background: linear-gradient(45deg, #555, #888); color: #bbb; border-color: #aaa; cursor: not-allowed; box-shadow: none; opacity: 0.6; }
-        .level-button.locked:hover { transform: none; } .level-button.locked::after { content: '🔒'; position: absolute; top: 5px; right: 8px; font-size: 0.8em; opacity: 0.8; }
+        .level-button.locked:hover { transform: none; }
+        .level-button.locked::after { content: '🔒'; position: absolute; top: 5px; right: 8px; font-size: 0.8em; opacity: 0.8; }
         #gameOverScreen { background: rgba(33, 10, 14, 0.95); border-color: #ff0033; box-shadow: 0 0 25px #ff0033; }
-        #gameOverScreen h2 { color: #ff4444; text-shadow: 0 0 10px #ff4444; } #gameOverScreen p { color: #00ffcc; }
-        #gameOverScreen button { background: linear-gradient(45deg, #ff4444, #ff8888); } #gameOverScreen button:hover { box-shadow: 0 0 15px #ff4444, 0 0 25px #ff8888; }
+        #gameOverScreen h2 { color: #ff4444; text-shadow: 0 0 10px #ff4444; }
+        #gameOverScreen p { color: #00ffcc; }
+        #gameOverScreen button { background: linear-gradient(45deg, #ff4444, #ff8888); }
+        #gameOverScreen button:hover { box-shadow: 0 0 15px #ff4444, 0 0 25px #ff8888; }
         #winningVideoContainer { background: black; border-color: #00ffcc; padding: 5px; width: 90vw; max-width: 700px; }
         .page-nav-container { display: flex; justify-content: space-between; width: 90%; max-width: 300px; margin-left: auto; margin-right: auto; margin-top: 25px;}
         .page-nav-button { background: linear-gradient(45deg, #55aaff, #00ccff); color: #0a0e21; padding: 8px 15px; font-size: 0.9em; min-width: 80px; }
@@ -58,11 +232,53 @@
 
     <button id="showMenuButton">Start Game</button>
     <div id="loadingMessage">Loading Assets...</div>
-    <div id="levelSelectionScreen" class="screen"> <h2>Select Level (Page <span id="currentPageSpan">1</span>)</h2> <div class="search-container"> <label for="levelSearchInput" style="white-space: nowrap;">Go to Level:</label> <input type="number" id="levelSearchInput" min="1" step="1"> <button id="levelSearchButton" class="search-button">Go</button> </div> <p id="levelSearchNotification"></p> <div class="level-buttons-container" id="levelButtonsContainer"></div> <div class="page-nav-container"> <button id="prevPageButton" class="page-nav-button">< Prev</button> <button id="nextPageButton" class="page-nav-button">Next ></button> </div> </div>
-    <div id="gameArea"> <canvas id="gameCanvas"></canvas> <div id="timer">Time: 0s</div> <div id="score">Score: 0 / 0</div> <div id="speedControl"> <label for="speedSlider">Speed:</label> <input type="range" id="speedSlider" min="0.5" max="2.5" step="0.1" value="1.0"> </div> <div id="controls"> <button id="leftButton" class="control-btn"> <img src="left.png" alt="Left"> </button> <button id="rightButton" class="control-btn"> <img src="right.png" alt="Right"> </button> </div> </div>
-    <div id="levelCompleteScreen" class="screen"> <h2>Level <span id="levelNumComplete">1</span> Complete!</h2> <p>Score: <span id="finalScore">0</span></p> <button id="nextLevelButton">Next Level</button> <button id="replayLevelButton">Replay Level</button> <button id="levelMenuButtonLC">Level Menu</button> </div>
-    <div id="gameOverScreen" class="screen"> <h2>Game Over!</h2> <p>Level: <span id="gameOverLevel">1</span></p> <p>Score: <span id="gameOverScore">0</span></p> <button id="retryLevelButton">Retry Level</button> <button id="levelMenuButtonGO">Level Menu</button> </div>
-    <div id="winningVideoContainer" class="screen"> <video id="winningVideo" width="100%" height="auto" preload="auto" style="display: block; max-height: 85vh;"> <source src="winning.mp4" type="video/mp4"> Your browser does not support the video tag. </video> <!-- <button id="skipVideoButton" style="position:absolute; bottom: 10px; right: 10px;">Skip</button> --> </div>
+
+    <div id="levelSelectionScreen" class="screen">
+        <h2>Select Level (Page <span id="currentPageSpan">1</span>)</h2>
+        <div class="search-container">
+            <label for="levelSearchInput" style="white-space: nowrap;">Go to Level:</label>
+            <input type="number" id="levelSearchInput" min="1" step="1">
+            <button id="levelSearchButton" class="search-button">Go</button>
+        </div>
+        <p id="levelSearchNotification"></p>
+        <div class="level-buttons-container" id="levelButtonsContainer"></div>
+        <div class="page-nav-container">
+            <button id="prevPageButton" class="page-nav-button">< Prev</button>
+            <button id="nextPageButton" class="page-nav-button">Next ></button>
+        </div>
+    </div>
+
+    <div id="gameArea">
+        <canvas id="gameCanvas"></canvas>
+        <div id="timer">Time: 0s</div>
+        <div id="score">Score: 0 / 0</div>
+        <div id="speedControl"> <label for="speedSlider">Speed:</label> <input type="range" id="speedSlider" min="0.5" max="2.5" step="0.1" value="1.0"> </div>
+        <div id="controls"> <button id="leftButton" class="control-btn"> <img src="left.png" alt="Left"> </button> <button id="rightButton" class="control-btn"> <img src="right.png" alt="Right"> </button> </div>
+    </div>
+
+    <div id="levelCompleteScreen" class="screen">
+        <h2>Level <span id="levelNumComplete">1</span> Complete!</h2>
+        <p>Score: <span id="finalScore">0</span></p>
+        <button id="nextLevelButton">Next Level</button>
+        <button id="replayLevelButton">Replay Level</button>
+        <button id="levelMenuButtonLC">Level Menu</button>
+    </div>
+
+    <div id="gameOverScreen" class="screen">
+        <h2>Game Over!</h2>
+        <p>Level: <span id="gameOverLevel">1</span></p>
+        <p>Score: <span id="gameOverScore">0</span></p>
+        <button id="retryLevelButton">Retry Level</button>
+        <button id="levelMenuButtonGO">Level Menu</button>
+    </div>
+
+    <div id="winningVideoContainer" class="screen">
+        <video id="winningVideo" width="100%" height="auto" preload="auto" style="display: block; max-height: 85vh;">
+            <source src="winning.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+        <!-- <button id="skipVideoButton" style="position:absolute; bottom: 10px; right: 10px;">Skip</button> -->
+    </div>
 
     <!-- Audio Elements -->
     <audio id="backgroundMusic" loop> <source src="carmusic.mp3" type="audio/mpeg"> </audio>
@@ -118,65 +334,14 @@
 
         if (!ctx) { alert("Could not get canvas context."); throw new Error("Canvas context not available."); }
 
-        // --- Device Detection & Speed Adjustment ---
-        const isMobileDevice = ('ontouchstart' in window || navigator.maxTouchPoints > 0);
-        console.log(`Device detected as Mobile: ${isMobileDevice}`);
-        const MOBILE_SPEED_ADJUSTMENT_FACTOR = 0.75;
-
-        // --- Canvas Sizing (Revised for Portrait Mobile) ---
-        let canvasWidth, canvasHeight; // Declare variables
-
-        function calculateCanvasSize() {
-            const aspectRatio = 400 / 600;
-            const maxGameHeight = 850; const maxGameWidth = 500;
-            const paddingFactor = 0.98;
-            const availableHeight = window.innerHeight; const availableWidth = window.innerWidth;
-            const isPortrait = availableHeight > availableWidth;
-            // console.log(`Screen: ${availableWidth}x${availableHeight}, Portrait: ${isPortrait}`);
-            let targetHeight, targetWidth, widthBasedOnHeight, heightBasedOnWidth;
-
-            targetHeight = Math.min(availableHeight * paddingFactor, maxGameHeight);
-            widthBasedOnHeight = targetHeight * aspectRatio;
-            targetWidth = Math.min(availableWidth * paddingFactor, maxGameWidth);
-            heightBasedOnWidth = targetWidth / aspectRatio;
-
-            if (isPortrait) {
-                 if (widthBasedOnHeight <= targetWidth) { canvasHeight = targetHeight; canvasWidth = widthBasedOnHeight; /* console.log("Sizing: Portrait, Height Priority"); */ }
-                 else { canvasWidth = targetWidth; canvasHeight = heightBasedOnWidth; /* console.log("Sizing: Portrait, Width Priority"); */ }
-            } else {
-                 if (heightBasedOnWidth <= targetHeight) { canvasWidth = targetWidth; canvasHeight = heightBasedOnWidth; /* console.log("Sizing: Landscape, Width Priority"); */ }
-                 else { canvasHeight = targetHeight; canvasWidth = widthBasedOnHeight; /* console.log("Sizing: Landscape, Height Priority"); */ }
-            }
-            canvas.width = Math.round(canvasWidth); canvas.height = Math.round(canvasHeight);
-            console.log(`Final Canvas Size: ${canvas.width} x ${canvas.height}`);
-        }
-        calculateCanvasSize(); // Calculate initial size
-
-        // --- Base Speed Calculations (Potentially Adjusted for Mobile) ---
-        let ABSOLUTE_BASE_ROAD_SPEED = canvas.height * 0.007;
-        let ABSOLUTE_BASE_ENEMY_SPEED = canvas.height * 0.008;
-        let ABSOLUTE_BASE_COIN_SPEED = canvas.height * 0.006;
-        let ABSOLUTE_BASE_SUPERCOIN_SPEED = canvas.height * 0.006;
-        let ABSOLUTE_BASE_ENEMY_SPAWN_RATE = 0.011;
-        let ABSOLUTE_BASE_COIN_SPAWN_RATE = 0.02;
-        let ABSOLUTE_BASE_SUPERCOIN_SPAWN_RATE = 0.005;
-        let baseCarSpeed = canvas.width * 0.015;
-
-        if (isMobileDevice) {
-            console.log("Applying mobile speed adjustment factor:", MOBILE_SPEED_ADJUSTMENT_FACTOR);
-            ABSOLUTE_BASE_ROAD_SPEED *= MOBILE_SPEED_ADJUSTMENT_FACTOR;
-            ABSOLUTE_BASE_ENEMY_SPEED *= MOBILE_SPEED_ADJUSTMENT_FACTOR;
-            ABSOLUTE_BASE_COIN_SPEED *= MOBILE_SPEED_ADJUSTMENT_FACTOR;
-            ABSOLUTE_BASE_SUPERCOIN_SPEED *= MOBILE_SPEED_ADJUSTMENT_FACTOR;
-            baseCarSpeed *= MOBILE_SPEED_ADJUSTMENT_FACTOR;
-        }
-        // console.log("Final Base Road Speed:", ABSOLUTE_BASE_ROAD_SPEED.toFixed(3));
-        // console.log("Final Base Car Speed:", baseCarSpeed.toFixed(3));
+        // --- Canvas Sizing Variables (will be set in resizeGameArea) ---
+        let canvasWidth = 400; // Initial default, will be recalculated
+        let canvasHeight = 600;
 
         // --- Infinite Level Config ---
-        const MAX_PLAYABLE_LEVEL = 100;
+        const MAX_PLAYABLE_LEVEL = 100; // Level to show "Max Level Reached"
         let currentLevel = 1;
-        let currentLevelConfig = {};
+        let currentLevelConfig = {}; // Will be populated by getLevelConfig
         let targetScore = 0;
 
         // --- Pagination Config ---
@@ -198,13 +363,12 @@
         let autopilotSpeedWarningActive = false; let originalSliderValue = 1.0; let originalGameSpeedMultiplier = 1.0;
         let isSeekingSafeSpot = false; let safeSpotTargetX = null;
 
-        // --- Game Elements Setup ---
-        const carWidth = canvas.width * 0.125; const carHeight = carWidth * 1.8;
-        const car = { x: canvas.width / 2 - carWidth / 2, y: canvas.height - carHeight - 15, speed: baseCarSpeed }; // Use potentially adjusted base speed
-        const coinWidth = canvas.width * 0.05; const coinHeight = coinWidth;
-        const superCoinWidth = canvas.width * 0.075; const superCoinHeight = superCoinWidth;
-        const autoCoinWidth = superCoinWidth * 3; const autoCoinHeight = autoCoinWidth;
-        const enemyCarWidth = carWidth; const enemyCarHeight = carHeight;
+        // --- Game Element Variables (sized in resizeGameArea) ---
+        let carWidth, carHeight, coinWidth, coinHeight, superCoinWidth, superCoinHeight, autoCoinWidth, autoCoinHeight, enemyCarWidth, enemyCarHeight;
+        let ABSOLUTE_BASE_ROAD_SPEED, ABSOLUTE_BASE_ENEMY_SPEED, ABSOLUTE_BASE_COIN_SPEED, ABSOLUTE_BASE_SUPERCOIN_SPEED;
+        let ABSOLUTE_BASE_ENEMY_SPAWN_RATE = 0.011; let ABSOLUTE_BASE_COIN_SPAWN_RATE = 0.02; let ABSOLUTE_BASE_SUPERCOIN_SPAWN_RATE = 0.005; // Base rates don't depend on size
+
+        const car = { x: 0, y: 0, speed: 0 }; // Positioned later
         const enemyCars = []; const coins = []; const superCoins = []; const autoCoins = [];
 
         // --- Image Loading ---
@@ -213,16 +377,55 @@
         function loadImage(imgData) { return new Promise((resolve, reject) => { const img = new Image(); img.onload = () => { images[imgData.name] = img; resolve(img); }; img.onerror = () => { console.error(` X Failed to load image: ${imgData.src}`); images[imgData.name] = null; reject(new Error(`Failed to load ${imgData.src}`)); }; img.src = imgData.src; }); }
         async function preloadImages() { if (assetsLoaded) return Promise.resolve(); console.log("Starting asset preloading..."); loadingMessage.innerText = "Loading Assets..."; loadingMessage.style.display = 'block'; showMenuButton.disabled = true; const promises = imageSources.map(loadImage); try { await Promise.all(promises); const essentialImages = ['car', 'enemyCar', 'road', 'autoCar']; const allEssentialLoaded = essentialImages.every(name => images[name] != null); if (allEssentialLoaded) { console.log("All essential images loaded successfully."); assetsLoaded = true; loadingMessage.style.display = 'none'; showMenuButton.disabled = false; return Promise.resolve(); } else { console.error("Essential images failed to load."); loadingMessage.innerText = "Error: Failed to load essential assets!"; essentialImages.forEach(name => { if(!images[name]) console.error(` - Missing essential image: ${name}`) }); return Promise.reject("Essential image load failure"); } } catch (error) { console.error("Error during image preloading:", error); loadingMessage.innerText = "Fatal Error Loading Assets!"; return Promise.reject(error); } }
 
-        // --- Dynamic Level Configuration ---
-        function getLevelConfig(levelNum) {
-            const baseTargetScore = 300; const baseEnemyRateMult = 0.6; const baseCoinRateMult = 1.3;
-            const scoreIncreasePerLevel = 50 + (levelNum * 25); const enemyRateIncrease = 0.03 * levelNum; const coinRateDecrease = 0.02 * levelNum;
-            let config = { level: levelNum, targetScore: Math.floor(baseTargetScore + scoreIncreasePerLevel * (levelNum - 1)), enemyRateMultiplier: Math.max(0.1, baseEnemyRateMult + enemyRateIncrease), coinRateMultiplier: Math.max(0.1, baseCoinRateMult - coinRateDecrease) };
-            return config;
+        // --- Resize Game Area and Calculate Sizes --- NEW FUNCTION ---
+        function resizeGameArea() {
+            const aspectRatio = 400 / 600; // Target aspect ratio
+            const screenWidth = window.innerWidth; const screenHeight = window.innerHeight;
+            let newWidth, newHeight;
+
+            // Calculate based on height first
+            newHeight = screenHeight; newWidth = newHeight * aspectRatio;
+            // If too wide, calculate based on width
+            if (newWidth > screenWidth) { newWidth = screenWidth; newHeight = newWidth / aspectRatio; }
+
+            console.log(`Screen: ${screenWidth}x${screenHeight} => Game Area: ${newWidth.toFixed(0)}x${newHeight.toFixed(0)}`);
+
+            // Apply size to canvas (internal resolution) & container
+            canvas.width = newWidth; canvas.height = newHeight;
+            gameArea.style.width = `${newWidth}px`; gameArea.style.height = `${newHeight}px`;
+
+            // Define size-dependent constants & initial values
+            carWidth = canvas.width * 0.125; carHeight = carWidth * 1.8;
+            coinWidth = canvas.width * 0.05; coinHeight = coinWidth;
+            superCoinWidth = canvas.width * 0.075; superCoinHeight = superCoinWidth;
+            autoCoinWidth = superCoinWidth * 3; autoCoinHeight = autoCoinWidth;
+            enemyCarWidth = carWidth; enemyCarHeight = carHeight;
+
+            car.speed = canvas.width * 0.015; // Base horizontal speed
+            originalCarSpeed = car.speed; // Store initial base speed
+            console.log(`Calculated base car speed: ${car.speed}`);
+
+            // Base speeds for vertical movement
+            ABSOLUTE_BASE_ROAD_SPEED = canvas.height * 0.007;
+            ABSOLUTE_BASE_ENEMY_SPEED = canvas.height * 0.008;
+            ABSOLUTE_BASE_COIN_SPEED = canvas.height * 0.006;
+            ABSOLUTE_BASE_SUPERCOIN_SPEED = canvas.height * 0.006;
+
+            // Reset car position based on new dimensions
+            car.x = canvas.width / 2 - carWidth / 2;
+            car.y = canvas.height - carHeight - 15;
+
+             // If game is running, update current speeds
+             if(gameRunning) { updateGameSpeed(); }
         }
 
-        // --- Speeds, Rates, Scrolling, Controls, Audio --- (Variables)
-        let gameSpeedMultiplier = 1.0; let roadSpeed, enemySpeed, coinSpeed, superCoinSpeed; let enemySpawnRate, coinSpawnRate, superCoinSpawnRate; let roadY = 0; let moveLeft = false; let moveRight = false;
+
+        // --- Dynamic Level Configuration ---
+        function getLevelConfig(levelNum) { const baseTargetScore = 300; const baseEnemyRateMult = 0.6; const baseCoinRateMult = 1.3; const scoreIncreasePerLevel = 50 + (levelNum * 25); const enemyRateIncrease = 0.03 * levelNum; const coinRateDecrease = 0.02 * levelNum; let config = { level: levelNum, targetScore: Math.floor(baseTargetScore + scoreIncreasePerLevel * (levelNum - 1)), enemyRateMultiplier: Math.max(0.1, baseEnemyRateMult + enemyRateIncrease), coinRateMultiplier: Math.max(0.1, baseCoinRateMult - coinRateDecrease) }; return config; }
+
+        // --- Speeds, Rates, Scrolling, Controls, Audio ---
+        // gameSpeedMultiplier managed dynamically
+        let roadSpeed, enemySpeed, coinSpeed, superCoinSpeed; let enemySpawnRate, coinSpawnRate, superCoinSpawnRate; let roadY = 0; let moveLeft = false; let moveRight = false;
         backgroundMusic.volume = 0.4; autopilotMusic.volume = 0.6; gameOverSound.volume = 0.7; coinSound.volume = 0.6; superCoinSound.volume = 0.7; levelWinSound.volume = 0.8; continueSound.volume = 0.9;
         function playSound(soundElement) { if(soundElement) { soundElement.currentTime = 0; soundElement.play().catch(e => {/*console.warn("Audio play failed:", e)*/}); } }
 
@@ -245,17 +448,63 @@
 
         // --- UI Visibility Control ---
         function hideAllOverlays() { levelSelectionScreen.style.display = 'none'; levelCompleteScreen.style.display = 'none'; gameOverScreen.style.display = 'none'; loadingMessage.style.display = 'none'; winningVideoContainer.style.display = 'none'; levelSearchNotification.style.display = 'none'; if(notificationTimeout) clearTimeout(notificationTimeout); }
-        function showGameScreen() { gameArea.style.display = 'block'; timerDisplay.style.display = 'block'; scoreDisplay.style.display = 'block'; controls.style.display = 'flex'; speedControlDiv.style.display = 'flex'; }
+        function showGameScreen() { gameArea.style.display = 'flex'; /* Use flex for centering */ timerDisplay.style.display = 'block'; scoreDisplay.style.display = 'block'; controls.style.display = 'flex'; speedControlDiv.style.display = 'flex'; }
         function hideGameScreen() { gameArea.style.display = 'none'; timerDisplay.style.display = 'none'; scoreDisplay.style.display = 'none'; controls.style.display = 'none'; speedControlDiv.style.display = 'none'; }
 
         // --- Show Level Selection --- MODIFIED ---
-        function showLevelSelection() { console.log(`Showing Level Selection Page ${currentPage}. Highest Unlocked: ${highestUnlockedLevel}`); hideGameScreen(); hideAllOverlays(); showMenuButton.style.display = 'none'; levelSelectionScreen.style.display = 'block'; document.getElementById('currentPageSpan').textContent = currentPage; const startLevel = (currentPage - 1) * LEVELS_PER_PAGE + 1; const endLevel = startLevel + LEVELS_PER_PAGE - 1; levelButtonsContainer.innerHTML = ''; for (let i = startLevel; i <= endLevel; i++) { const button = document.createElement('button'); const config = getLevelConfig(i); button.innerHTML = `Level ${i}<span>Target: ${config.targetScore}</span>`; button.classList.add('level-button'); button.dataset.level = i; if (i <= highestUnlockedLevel) { button.classList.remove('locked'); button.disabled = false; button.addEventListener('click', () => { console.log(`Level ${i} selected.`); startGame(i); }); } else { button.classList.add('locked'); button.disabled = true; } levelButtonsContainer.appendChild(button); } const prevButton = document.getElementById('prevPageButton'); const nextButton = document.getElementById('nextPageButton'); prevButton.disabled = (currentPage <= 1); const firstLevelOfNextPage = endLevel + 1; nextButton.disabled = !(highestUnlockedLevel >= firstLevelOfNextPage || highestUnlockedLevel + 1 === firstLevelOfNextPage); levelSearchInput.value = ''; }
+        function showLevelSelection() {
+             console.log(`Showing Level Selection Page ${currentPage}. Highest Unlocked: ${highestUnlockedLevel}`);
+             hideGameScreen(); hideAllOverlays(); showMenuButton.style.display = 'none';
+             levelSelectionScreen.style.display = 'block';
+             document.getElementById('currentPageSpan').textContent = currentPage;
+             const startLevel = (currentPage - 1) * LEVELS_PER_PAGE + 1;
+             const endLevel = startLevel + LEVELS_PER_PAGE - 1;
+             levelButtonsContainer.innerHTML = '';
+             for (let i = startLevel; i <= endLevel; i++) {
+                 const button = document.createElement('button');
+                 const config = getLevelConfig(i);
+                 button.innerHTML = `Level ${i}<span>Target: ${config.targetScore}</span>`; // Show target score
+                 button.classList.add('level-button');
+                 button.dataset.level = i;
+                 if (i <= highestUnlockedLevel) {
+                     button.classList.remove('locked'); button.disabled = false;
+                     button.addEventListener('click', () => { console.log(`Level ${i} selected.`); startGame(i); });
+                 } else {
+                     button.classList.add('locked'); button.disabled = true;
+                 }
+                 levelButtonsContainer.appendChild(button);
+             }
+             const prevButton = document.getElementById('prevPageButton'); const nextButton = document.getElementById('nextPageButton');
+             prevButton.disabled = (currentPage <= 1);
+             const firstLevelOfNextPage = endLevel + 1;
+             nextButton.disabled = !(highestUnlockedLevel >= firstLevelOfNextPage || highestUnlockedLevel + 1 === firstLevelOfNextPage);
+             levelSearchInput.value = ''; // Clear search input when changing pages
+        }
+
 
         // --- Play Winning Video ---
         function playWinningVideo() { console.log("Starting winning video playback..."); hideGameScreen(); hideAllOverlays(); winningVideoContainer.style.display = 'block'; winningVideo.currentTime = 0; winningVideo.play().then(() => { console.log("Winning video started playing."); }).catch(error => { console.error("Video play failed:", error); showPostVideoScreen(); }); }
 
         // --- Show Screen After Video --- MODIFIED ---
-        function showPostVideoScreen() { console.log("Showing screen after video playback."); hideGameScreen(); hideAllOverlays(); winningVideoContainer.style.display = 'none'; levelNumCompleteSpan.innerText = currentLevel; finalScoreSpan.innerText = score; if (currentLevel >= MAX_PLAYABLE_LEVEL) { levelCompleteScreen.querySelector('h2').innerHTML = `🎉 Max Level Reached! 🎉`; nextLevelButton.disabled = true; nextLevelButton.innerText = "Amazing!"; nextLevelButton.style.display = 'inline-block'; } else { levelCompleteScreen.querySelector('h2').innerHTML = `Level <span id="levelNumComplete">${currentLevel}</span> Complete!`; const nextLevelNum = currentLevel + 1; if (nextLevelNum <= highestUnlockedLevel) { nextLevelButton.disabled = false; nextLevelButton.innerText = "Next Level"; nextLevelButton.style.display = 'inline-block'; } else { nextLevelButton.disabled = true; nextLevelButton.innerText = "Locked"; nextLevelButton.style.display = 'none'; } } levelCompleteScreen.style.display = 'block'; }
+        function showPostVideoScreen() {
+            console.log("Showing screen after video playback.");
+            hideGameScreen(); hideAllOverlays(); winningVideoContainer.style.display = 'none';
+            levelNumCompleteSpan.innerText = currentLevel; finalScoreSpan.innerText = score;
+            if (currentLevel >= MAX_PLAYABLE_LEVEL) {
+                levelCompleteScreen.querySelector('h2').innerHTML = `🎉 Max Level Reached! 🎉`;
+                nextLevelButton.disabled = true; nextLevelButton.innerText = "Amazing!"; nextLevelButton.style.display = 'inline-block';
+            } else {
+                levelCompleteScreen.querySelector('h2').innerHTML = `Level <span id="levelNumComplete">${currentLevel}</span> Complete!`;
+                const nextLevelNum = currentLevel + 1;
+                if (nextLevelNum <= highestUnlockedLevel) { // Check unlock status only
+                    nextLevelButton.disabled = false; nextLevelButton.innerText = "Next Level"; nextLevelButton.style.display = 'inline-block';
+                } else {
+                    nextLevelButton.disabled = true; nextLevelButton.innerText = "Locked"; nextLevelButton.style.display = 'none';
+                }
+            }
+            levelCompleteScreen.style.display = 'block';
+        }
+
 
         // --- Find Safe Spot Logic ---
         function findAndSetSafeSpot() { console.log("Attempting to find a safe spot..."); const SAFE_CHECK_DISTANCE_Y = carHeight * 3.5; const LANE_CHECK_POSITIONS = [ carWidth * 0.75, canvas.width / 2, canvas.width - carWidth * 0.75 ]; let foundSafeSpot = false; for (const targetX of LANE_CHECK_POSITIONS) { let isLaneSafe = true; const laneLeft = targetX - carWidth / 2; const laneRight = targetX + carWidth / 2; for (const enemy of enemyCars) { const verticalDist = car.y - (enemy.y + enemyCarHeight); if (enemy.y < car.y && verticalDist < SAFE_CHECK_DISTANCE_Y) { const enemyLeft = enemy.x; const enemyRight = enemy.x + enemyCarWidth; if (enemyRight > laneLeft && enemyLeft < laneRight) { isLaneSafe = false; break; } } } if (isLaneSafe) { console.log(` - Found safe spot at X=${targetX.toFixed(0)}`); safeSpotTargetX = targetX; isSeekingSafeSpot = true; foundSafeSpot = true; return true; } } if (!foundSafeSpot) { console.log(" - No completely safe spot found."); safeSpotTargetX = null; isSeekingSafeSpot = false; } return false; }
@@ -307,7 +556,7 @@
             const centerLaneX = canvas.width / 2 - carWidth / 2; if (car.x < centerLaneX - car.speed) return 1; if (car.x > centerLaneX + car.speed) return -1; return 0;
         }
 
-        // --- Handle Level Search --- MODIFIED ---
+         // --- Handle Level Search --- MODIFIED ---
          function handleLevelSearch() {
             if (notificationTimeout) clearTimeout(notificationTimeout);
             levelSearchNotification.style.display = 'none'; levelSearchNotification.textContent = '';
@@ -395,9 +644,9 @@
             if (!assetsLoaded) { console.error("Assets not loaded!"); alert("Error: Game assets are not loaded. Please try again."); showMenuButton.style.display = 'block'; return; }
             if (gameRunning) { gameRunning = false; console.warn("Stopping previous game loop."); }
             hideAllOverlays(); showMenuButton.style.display = 'none';
-            // SET gameArea dimensions based on calculated canvas size
-             gameArea.style.width = `${canvasWidth}px`; gameArea.style.height = `${calculatedHeight}px`;
-             showGameScreen(); // Shows gameArea and internal UI
+
+            resizeGameArea(); // <<< Resize and Set Up Dimensions FIRST
+            showGameScreen(); // Show the correctly sized game area
 
             currentLevel = levelNum;
             currentLevelConfig = getLevelConfig(levelNum); // Get dynamic config
@@ -409,13 +658,14 @@
             isAutopilotActive = false; autopilotEndTime = 0; autopilotSpeedWarningActive = false; isSeekingSafeSpot = false; safeSpotTargetX = null; // Reset safe spot state
             nextAutoCoinSpawnTime = Date.now() + AUTOCOIN_INITIAL_SPAWN_DELAY; // Initial 10s delay
             backgroundMusicResumeTime = 0;
-            // Use the potentially mobile-adjusted baseCarSpeed calculated earlier
+            // car.speed and originalCarSpeed reset in resizeGameArea or here if needed
+            const baseCarSpeed = canvas.width * 0.015; // Recalculate base speed based on potentially new canvas size
             car.speed = baseCarSpeed; originalCarSpeed = baseCarSpeed;
             originalSliderValue = 1.0; speedSlider.value = 1.0; speedSlider.disabled = false;
             gameSpeedMultiplier = 1.0; originalGameSpeedMultiplier = 1.0;
             console.log(`Initial car speed: ${car.speed}, Initial game multiplier: ${gameSpeedMultiplier}`);
             console.log(`Initial AutoCoin spawn scheduled around: ${nextAutoCoinSpawnTime}`);
-            car.x = canvas.width / 2 - carWidth / 2; car.y = canvas.height - carHeight - 15;
+            // Car position reset in resizeGameArea
             enemyCars.length = 0; coins.length = 0; superCoins.length = 0; autoCoins.length = 0;
             scoreDisplay.textContent = `Score: ${score} / ${targetScore}`; // Set initial score display with target
             timerDisplay.innerText = `Time: 0s`; moveLeft = false; moveRight = false; roadY = 0;
@@ -453,7 +703,7 @@
         winningVideo.addEventListener('ended', () => { console.log("Winning video finished."); showPostVideoScreen(); });
         // Optional Skip Button Listener
         // skipVideoButton.addEventListener('click', () => { winningVideo.pause(); showPostVideoScreen(); });
-         // --- Pagination Button Listeners --- MODIFIED ---
+         // --- Pagination Button Listeners --- MODIFIED
          document.getElementById('prevPageButton').addEventListener('click', () => { if (currentPage > 1) { currentPage--; levelSearchInput.value = ''; levelSearchNotification.style.display = 'none'; if(notificationTimeout) clearTimeout(notificationTimeout); showLevelSelection(); } });
          document.getElementById('nextPageButton').addEventListener('click', () => { const endLevel = (currentPage - 1) * LEVELS_PER_PAGE + LEVELS_PER_PAGE; const firstLevelOfNextPage = endLevel + 1; if (highestUnlockedLevel >= firstLevelOfNextPage || highestUnlockedLevel + 1 === firstLevelOfNextPage) { currentPage++; levelSearchInput.value = ''; levelSearchNotification.style.display = 'none'; if(notificationTimeout) clearTimeout(notificationTimeout); showLevelSelection(); } });
         // --- Level Search Listeners ---
@@ -462,6 +712,9 @@
 
         // --- Initial Setup ---
         window.onload = () => { console.log("Window loaded."); loadUnlockProgress(); currentPage = Math.ceil(highestUnlockedLevel / LEVELS_PER_PAGE); hideGameScreen(); hideAllOverlays(); showMenuButton.style.display = 'block'; console.log("Initial setup complete. Waiting for user interaction."); };
+         // Optional: Resize listener if you want the game to adapt to orientation changes or window resizing *during* play (can be complex)
+         // window.addEventListener('resize', resizeGameArea);
+
 
     </script>
 </body>
