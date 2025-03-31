@@ -1,93 +1,180 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Car Racing 2D - Infinite Levels (7:12 Ratio)</title>
+    <title>Car Racing 2D - Infinite Levels (9:16 Display)</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <style>
         /* --- Basic Styles --- */
-        body { margin: 0; overflow: hidden; background: #0a0e21; color: #00ffcc; font-family: 'Orbitron', sans-serif; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; -webkit-user-select: none; user-select: none; }
-        /* Modified gameArea styles for potential flexibility */
+        html, body {
+            height: 100%;
+            margin: 0;
+            overflow: hidden; /* Prevent scrollbars on body */
+            background: #0a0e21; /* Background for the whole page */
+        }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #00ffcc;
+            font-family: 'Orbitron', sans-serif;
+             -webkit-user-select: none;
+             user-select: none;
+        }
+        /* #gameArea will be sized by JS to maintain 9:16 ratio */
         #gameArea {
-            position: relative;
-            /* Use max-width/max-height controlled by JS now */
-            display: none;
+            position: relative; /* Needed for absolute positioning of children */
+            display: none;      /* Initially hidden */
             border: 5px solid #00ffcc;
             box-shadow: 0 0 30px #00ffcc, 0 0 60px #ff00ff;
             border-radius: 10px;
-            background-color: #333;
-            overflow: hidden; /* Important */
+            background-color: #333; /* Background of the game area */
+            overflow: hidden;      /* Crucial: clips canvas */
+            /* width/height set by JS */
         }
         canvas {
-            display: block;
+            display: block; /* Removes bottom space */
             touch-action: none;
-            /* Let JS set explicit width/height */
             box-sizing: border-box;
-            /* Ensure canvas fills the container set by JS */
+            /* Canvas fills the #gameArea container */
             width: 100%;
             height: 100%;
         }
-        #timer, #score, #speedControl, #controls { position: absolute; z-index: 5; box-sizing: border-box; }
-        #timer, #score, #speedControl { background: rgba(0, 0, 0, 0.8); color: #00ffcc; padding: 8px 15px; border: 2px solid #ff00ff; border-radius: 5px; font-size: 14px; text-shadow: 0 0 8px #00ffcc; display: none; }
+        /* UI Elements positioned absolutely within #gameArea */
+        #timer, #score, #speedControl, #controls {
+            position: absolute;
+            z-index: 5;
+            box-sizing: border-box;
+        }
+        #timer, #score, #speedControl {
+            background: rgba(0, 0, 0, 0.8);
+            color: #00ffcc;
+            padding: 8px 15px; /* Consider scaling padding/font with size if needed */
+            border: 2px solid #ff00ff;
+            border-radius: 5px;
+            font-size: 14px; /* Might need scaling */
+            text-shadow: 0 0 8px #00ffcc;
+            display: none; /* Initially hidden */
+        }
         #timer { top: 10px; right: 10px; }
-        #score { top: 10px; left: 10px; line-height: 1.2; /* Adjust for target score */ }
-        #speedControl { top: 50px; right: 10px; width: 180px; left: auto; display: none; align-items: center; justify-content: space-between; padding: 5px 10px; }
-        #speedControl label { margin-right: 10px; white-space: nowrap; }
+        #score { top: 10px; left: 10px; line-height: 1.2; }
+        #speedControl {
+            top: 50px; /* Adjust position as needed for 9:16 */
+            right: 10px;
+            width: 160px; /* Slightly narrower */
+            left: auto;
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            padding: 5px 10px;
+        }
+        #speedControl label { margin-right: 8px; white-space: nowrap; }
         #speedSlider { width: 100%; cursor: pointer; appearance: none; height: 8px; background: linear-gradient(90deg, #00ffcc, #ff00ff); border-radius: 5px; outline: none; }
         #speedSlider:disabled { cursor: not-allowed; opacity: 0.6; }
         #speedSlider::-webkit-slider-thumb { appearance: none; width: 20px; height: 20px; background: #fff; border: 2px solid #ff00ff; border-radius: 50%; cursor: pointer; }
         #speedSlider:disabled::-webkit-slider-thumb { cursor: not-allowed; background: #aaa; }
         #speedSlider::-moz-range-thumb { width: 18px; height: 18px; background: #fff; border: 2px solid #ff00ff; border-radius: 50%; cursor: pointer; }
         #speedSlider:disabled::-moz-range-thumb { cursor: not-allowed; background: #aaa; }
-        #controls { position: absolute; bottom: 15px; width: 100%; display: none; justify-content: space-between; align-items: center; z-index: 5; padding: 0 20px; box-sizing: border-box; }
-        .control-btn { background: linear-gradient(45deg, #ff00ff, #00ffcc); color: #fff; border: none; padding: 12px 18px; cursor: pointer; font-size: 20px; border-radius: 10px; margin: 5px; box-shadow: 0 0 15px #ff00ff, 0 0 25px #00ffcc; transition: transform 0.15s, box-shadow 0.15s; display: inline-flex; justify-content: center; align-items: center; min-width: 70px; min-height: 55px; touch-action: manipulation; }
-        .control-btn img { height: 30px; vertical-align: middle; pointer-events: none; }
-        .control-btn:hover { transform: scale(1.05); } .control-btn:active { transform: scale(0.98); }
-        #loadingMessage { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #00ffcc; font-size: 18px; text-shadow: 0 0 10px #00ffcc; display: none; z-index: 20; background: rgba(0,0,0,0.7); padding: 15px 25px; border-radius: 8px; }
-        #showMenuButton { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: linear-gradient(45deg, #00ffcc, #ff00ff); color: #1a2a6c; font-weight: bold; border: none; padding: 20px 40px; cursor: pointer; font-size: 24px; border-radius: 10px; box-shadow: 0 0 20px #00ffcc, 0 0 35px #ff00ff; transition: transform 0.2s, box-shadow 0.2s; z-index: 10; display: block; }
-        #showMenuButton:hover { transform: translate(-50%, -50%) scale(1.1); } #showMenuButton:active { transform: translate(-50%, -50%) scale(0.95); }
-        .screen { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(10, 14, 33, 0.95); color: #00ffcc; padding: 25px 35px; border: 3px solid #ff00ff; border-radius: 15px; text-align: center; z-index: 15; display: none; box-shadow: 0 0 25px #ff00ff; min-width: 280px; box-sizing: border-box; }
-        .screen h2 { margin-top: 0; font-size: 1.8em; text-shadow: 0 0 10px #00ffcc; margin-bottom: 20px; } .screen p { font-size: 1.1em; margin-bottom: 20px; }
+
+        #controls {
+            position: absolute;
+            bottom: 15px; /* Adjust if needed */
+            width: 100%;
+            display: none; /* Initially hidden */
+            justify-content: space-between; /* Keep space between */
+            align-items: center;
+            z-index: 5;
+            padding: 0 15px; /* Slightly less padding */
+            box-sizing: border-box;
+        }
+        .control-btn {
+             background: linear-gradient(45deg, #ff00ff, #00ffcc); color: #fff; border: none;
+             padding: 10px 15px; /* Slightly smaller padding */
+             cursor: pointer;
+             font-size: 18px; /* Slightly smaller font */
+             border-radius: 8px;
+             margin: 5px;
+             box-shadow: 0 0 12px #ff00ff, 0 0 20px #00ffcc;
+             transition: transform 0.15s, box-shadow 0.15s;
+             display: inline-flex; justify-content: center; align-items: center;
+             min-width: 60px; /* Slightly smaller min-width */
+             min-height: 50px; /* Slightly smaller min-height */
+             touch-action: manipulation;
+        }
+        .control-btn img { height: 25px; /* Slightly smaller image */ vertical-align: middle; pointer-events: none; }
+        .control-btn:hover { transform: scale(1.05); }
+        .control-btn:active { transform: scale(0.98); }
+
+        /* Overlays - Still positioned relative to viewport center */
+        #loadingMessage, .screen {
+            position: fixed; /* Use fixed to position relative to viewport */
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 15; /* Ensure screens are above gameArea */
+        }
+        #loadingMessage {
+             color: #00ffcc; font-size: 18px; text-shadow: 0 0 10px #00ffcc;
+             display: none;
+             background: rgba(0,0,0,0.7); padding: 15px 25px; border-radius: 8px;
+             z-index: 20; /* Above other screens */
+        }
+        #showMenuButton {
+            position: fixed; /* Relative to viewport */
+            top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: linear-gradient(45deg, #00ffcc, #ff00ff); color: #1a2a6c; font-weight: bold;
+            border: none; padding: 20px 40px; cursor: pointer; font-size: 24px; border-radius: 10px;
+            box-shadow: 0 0 20px #00ffcc, 0 0 35px #ff00ff; transition: transform 0.2s, box-shadow 0.2s;
+            z-index: 10; /* Below screens, above game area when hidden */
+            display: block;
+        }
+        #showMenuButton:hover { transform: translate(-50%, -50%) scale(1.1); }
+        #showMenuButton:active { transform: translate(-50%, -50%) scale(0.95); }
+
+        .screen {
+            background: rgba(10, 14, 33, 0.95); color: #00ffcc; padding: 25px 35px;
+            border: 3px solid #ff00ff; border-radius: 15px; text-align: center;
+            display: none; box-shadow: 0 0 25px #ff00ff; min-width: 280px;
+            max-width: 90vw; /* Prevent overlays being too wide on desktop */
+            box-sizing: border-box;
+        }
+        .screen h2 { margin-top: 0; font-size: 1.8em; text-shadow: 0 0 10px #00ffcc; margin-bottom: 20px; }
+        .screen p { font-size: 1.1em; margin-bottom: 20px; }
         .screen button { background: linear-gradient(45deg, #00ffcc, #ff00ff); color: #1a2a6c; font-weight: bold; border: none; padding: 10px 20px; cursor: pointer; font-size: 1em; border-radius: 8px; margin: 8px; box-shadow: 0 0 10px #00ffcc, 0 0 15px #ff00ff; transition: transform 0.2s, box-shadow 0.2s; min-width: 120px; }
         .screen button:hover { transform: scale(1.08); box-shadow: 0 0 15px #00ffcc, 0 0 25px #ff00ff; }
         .screen button:disabled { background: grey; color: #aaa; cursor: not-allowed; box-shadow: none; transform: none; }
-        #levelSelectionScreen .level-buttons-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; /* Adjust gap */ margin-top: 25px; max-width: 400px; }
-        /* MODIFIED Level Button CSS */
+
+        #levelSelectionScreen .level-buttons-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 20px; max-width: 380px; }
         .level-button {
              background: linear-gradient(45deg, #00aaff, #00ffcc); color: #0a0e21; font-weight: bold; border: 2px solid #00ffcc;
-             padding: 10px 15px; /* Adjust padding */ cursor: pointer; font-size: 0.9em; /* Adjust font size */ line-height: 1.3; /* Adjust line height */
-             border-radius: 10px; box-shadow: 0 0 10px #00aaff, 0 0 15px #00ffcc; transition: transform 0.2s, box-shadow 0.2s;
-             width: 110px; /* Adjust width */ height: 65px; /* Fixed height */ position: relative; white-space: pre-line; /* Allow newline */ display: flex; flex-direction: column; justify-content: center; align-items: center;
+             padding: 8px 12px; cursor: pointer; font-size: 0.85em; line-height: 1.2;
+             border-radius: 8px; box-shadow: 0 0 8px #00aaff, 0 0 12px #00ffcc; transition: transform 0.2s, box-shadow 0.2s;
+             width: 100px; height: 60px; position: relative; white-space: pre-line; display: flex; flex-direction: column; justify-content: center; align-items: center;
          }
-         .level-button span { font-size: 0.8em; opacity: 0.9; margin-top: 3px; } /* Style for target score */
-         /* END MODIFICATION */
-        .level-button:hover { transform: scale(1.1); box-shadow: 0 0 15px #00aaff, 0 0 25px #00ffcc; }
+         .level-button span { font-size: 0.75em; opacity: 0.9; margin-top: 2px; }
+        .level-button:hover { transform: scale(1.1); box-shadow: 0 0 12px #00aaff, 0 0 20px #00ffcc; }
         .level-button.locked { background: linear-gradient(45deg, #555, #888); color: #bbb; border-color: #aaa; cursor: not-allowed; box-shadow: none; opacity: 0.6; }
-        .level-button.locked:hover { transform: none; } .level-button.locked::after { content: '🔒'; position: absolute; top: 5px; right: 8px; font-size: 0.8em; opacity: 0.8; }
+        .level-button.locked:hover { transform: none; } .level-button.locked::after { content: '🔒'; position: absolute; top: 4px; right: 6px; font-size: 0.7em; opacity: 0.8; }
+
         #gameOverScreen { background: rgba(33, 10, 14, 0.95); border-color: #ff0033; box-shadow: 0 0 25px #ff0033; }
         #gameOverScreen h2 { color: #ff4444; text-shadow: 0 0 10px #ff4444; } #gameOverScreen p { color: #00ffcc; }
         #gameOverScreen button { background: linear-gradient(45deg, #ff4444, #ff8888); } #gameOverScreen button:hover { box-shadow: 0 0 15px #ff4444, 0 0 25px #ff8888; }
-        #winningVideoContainer { background: black; border-color: #00ffcc; padding: 5px; width: 90vw; max-width: 700px; /* Video container might need separate sizing logic if aspect ratio differs greatly */ }
-        .page-nav-container { display: flex; justify-content: space-between; width: 90%; max-width: 300px; margin-left: auto; margin-right: auto; margin-top: 25px;}
-        .page-nav-button { background: linear-gradient(45deg, #55aaff, #00ccff); color: #0a0e21; padding: 8px 15px; font-size: 0.9em; min-width: 80px; }
+
+        #winningVideoContainer { background: black; border-color: #00ffcc; padding: 5px; width: 90vw; max-width: 400px; /* Limit video width more for portrait */ }
+        .page-nav-container { display: flex; justify-content: space-between; width: 90%; max-width: 280px; margin: 20px auto 0 auto; }
+        .page-nav-button { background: linear-gradient(45deg, #55aaff, #00ccff); color: #0a0e21; padding: 7px 12px; font-size: 0.85em; min-width: 70px; }
         .page-nav-button:disabled { background: grey; color: #aaa; cursor: not-allowed; box-shadow: none; transform: none; opacity: 0.6; }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
+    <!-- This button is outside the gameArea but centered by body flexbox -->
     <button id="showMenuButton">Start Game</button>
-    <div id="loadingMessage">Loading Assets...</div>
-    <div id="levelSelectionScreen" class="screen">
-        <h2>Select Level (Page <span id="currentPageSpan">1</span>)</h2>
-        <div class="level-buttons-container" id="levelButtonsContainer"></div>
-        <div class="page-nav-container">
-            <button id="prevPageButton" class="page-nav-button">< Prev</button>
-            <button id="nextPageButton" class="page-nav-button">Next ></button>
-        </div>
-    </div>
-    <!-- Note: gameArea style will be set by JS -->
+
+    <!-- Game Area container - sized and centered -->
     <div id="gameArea">
         <canvas id="gameCanvas"></canvas>
+        <!-- UI elements are absolutely positioned inside gameArea -->
         <div id="timer">Time: 0s</div>
         <div id="score">Score: 0 / 0</div>
         <div id="speedControl">
@@ -97,6 +184,17 @@
         <div id="controls">
              <button id="leftButton" class="control-btn"> <img src="left.png" alt="Left"> </button>
              <button id="rightButton" class="control-btn"> <img src="right.png" alt="Right"> </button>
+        </div>
+    </div>
+
+    <!-- Overlays are fixed positioned, centered in viewport -->
+    <div id="loadingMessage">Loading Assets...</div>
+    <div id="levelSelectionScreen" class="screen">
+        <h2>Select Level (Page <span id="currentPageSpan">1</span>)</h2>
+        <div class="level-buttons-container" id="levelButtonsContainer"></div>
+        <div class="page-nav-container">
+            <button id="prevPageButton" class="page-nav-button">< Prev</button>
+            <button id="nextPageButton" class="page-nav-button">Next ></button>
         </div>
     </div>
     <div id="levelCompleteScreen" class="screen">
@@ -113,7 +211,7 @@
         <button id="retryLevelButton">Retry Level</button>
         <button id="levelMenuButtonGO">Level Menu</button>
     </div>
-    <div id="winningVideoContainer" class="screen" style="background: black; border-color: #00ffcc; padding: 5px; width: 90vw; max-width: 700px;">
+    <div id="winningVideoContainer" class="screen">
         <video id="winningVideo" width="100%" height="auto" preload="auto" style="display: block; max-height: 85vh;">
             <source src="winning.mp4" type="video/mp4"> Your browser does not support the video tag.
         </video>
@@ -136,7 +234,7 @@
         const loadingMessage = document.getElementById('loadingMessage');
         const levelSelectionScreen = document.getElementById('levelSelectionScreen');
         const levelButtonsContainer = document.getElementById('levelButtonsContainer');
-        const gameArea = document.getElementById('gameArea');
+        const gameArea = document.getElementById('gameArea'); // The main container
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const timerDisplay = document.getElementById('timer');
@@ -171,64 +269,85 @@
 
         if (!ctx) { alert("Could not get canvas context."); throw new Error("Canvas context not available."); }
 
-        // --- Canvas Sizing --- START OF MODIFICATION (7:12 Ratio) ---
-        const desiredAspectRatio = 7 / 12; // NEW: Set the desired 7:12 aspect ratio (width / height)
-        const maxWidth = 420;   // Adjusted max width for 7:12 ratio
-        const maxHeight = 720;  // Adjusted max height for 7:12 ratio
-        const minWidth = 210;   // Adjusted minimum width for 7:12 ratio
+        // --- Canvas Sizing --- START OF MODIFICATION (9:16 Ratio for Game Area) ---
+        const desiredAspectRatio = 9 / 16; // NEW: Set the desired 9:16 aspect ratio (width / height)
+        const maxWidth = 450;   // Max width for 9:16 (adjust as needed)
+        const maxHeight = 800;  // Max height for 9:16 (adjust as needed)
+        const minWidth = 270;   // Min width for 9:16 (adjust as needed)
 
-        function calculateCanvasSize() {
-            const availableHeight = window.innerHeight * 0.90; // Use slightly less height
+        function calculateGameAreaSize() {
+            // Calculate based on viewport size minus some padding
+            const availableHeight = window.innerHeight * 0.95; // Use more height available
             const availableWidth = window.innerWidth * 0.95;
 
             // Calculate the largest height that fits, respecting width constraints and aspect ratio
             let potentialHeightBasedOnWidth = Math.min(availableWidth, maxWidth) / desiredAspectRatio;
-            let canvasHeight = Math.min(maxHeight, availableHeight, potentialHeightBasedOnWidth);
+            let containerHeight = Math.min(maxHeight, availableHeight, potentialHeightBasedOnWidth);
 
             // Now calculate width based on the determined height
-            let canvasWidth = canvasHeight * desiredAspectRatio;
+            let containerWidth = containerHeight * desiredAspectRatio;
 
-            // If the calculated width is *still* too wide (can happen if height was limited by maxHeight or availableHeight)
+            // If the calculated width is *still* too wide (can happen if height was limited)
             // recalculate based on width being the primary constraint
-            if (canvasWidth > Math.min(availableWidth, maxWidth)) {
-                canvasWidth = Math.min(availableWidth, maxWidth);
-                canvasHeight = canvasWidth / desiredAspectRatio;
+            if (containerWidth > Math.min(availableWidth, maxWidth)) {
+                containerWidth = Math.min(availableWidth, maxWidth);
+                containerHeight = containerWidth / desiredAspectRatio;
             }
 
             // Enforce minimum width (and adjust height accordingly)
-            if (canvasWidth < minWidth) {
-                canvasWidth = minWidth;
-                canvasHeight = canvasWidth / desiredAspectRatio;
+            if (containerWidth < minWidth) {
+                containerWidth = minWidth;
+                containerHeight = containerWidth / desiredAspectRatio;
                 // Re-check if minimum width makes it too tall
-                if (canvasHeight > Math.min(availableHeight, maxHeight)) {
-                     canvasHeight = Math.min(availableHeight, maxHeight);
-                     canvasWidth = canvasHeight * desiredAspectRatio;
+                if (containerHeight > Math.min(availableHeight, maxHeight)) {
+                     containerHeight = Math.min(availableHeight, maxHeight);
+                     containerWidth = containerHeight * desiredAspectRatio;
                 }
             }
 
-            // Return rounded integer values
+            // Return rounded integer values for the container
             return {
-                width: Math.round(canvasWidth),
-                height: Math.round(canvasHeight)
+                width: Math.round(containerWidth),
+                height: Math.round(containerHeight)
             };
         }
 
-        // Set initial canvas size
-        const canvasSize = calculateCanvasSize();
-        canvas.width = canvasSize.width;
-        canvas.height = canvasSize.height;
-        // Set the container size to match the canvas *internal* size
-        gameArea.style.width = `${canvas.width}px`;
-        gameArea.style.height = `${canvas.height}px`;
+        // Function to apply the size and set canvas internal resolution
+        function setGameSize() {
+            const containerSize = calculateGameAreaSize();
 
-        console.log(`Canvas internal size set: ${canvas.width} x ${canvas.height} (Ratio: ${(canvas.width / canvas.height).toFixed(2)})`);
-        // --- Canvas Sizing --- END OF MODIFICATION ---
+            // Apply size to the #gameArea container
+            gameArea.style.width = `${containerSize.width}px`;
+            gameArea.style.height = `${containerSize.height}px`;
+
+            // IMPORTANT: Set canvas internal resolution to match the container size
+            // This must happen AFTER the container's CSS size is set
+            canvas.width = containerSize.width; // Use offsetWidth/Height if issues occur
+            canvas.height = containerSize.height;
+
+            console.log(`Game Area size set: ${gameArea.style.width} x ${gameArea.style.height}`);
+            console.log(`Canvas internal resolution set: ${canvas.width} x ${canvas.height} (Ratio: ${(canvas.width / canvas.height).toFixed(2)})`);
+
+            // Optional: Recalculate relative element sizes here if needed
+            // Since we reverted to original percentages, this might not be necessary
+            // but keep it in mind if elements look wrong.
+            // e.g., carWidth = canvas.width * 0.125; carHeight = carWidth * 1.8; etc.
+        }
+
+        // Set initial size on load
+        let gameAreaSize = { width: 360, height: 640 }; // Default fallback
+        try {
+            gameAreaSize = calculateGameAreaSize();
+            setGameSize(); // Apply the initial size
+        } catch (e) {
+            console.error("Error calculating initial size:", e);
+        }
 
 
         // --- Infinite Level Config ---
-        const MAX_PLAYABLE_LEVEL = 100; // Level to show "Max Level Reached"
+        const MAX_PLAYABLE_LEVEL = 100;
         let currentLevel = 1;
-        let currentLevelConfig = {}; // Will be populated by getLevelConfig
+        let currentLevelConfig = {};
         let targetScore = 0;
 
         // --- Pagination Config ---
@@ -250,27 +369,46 @@
         let autopilotSpeedWarningActive = false; let originalSliderValue = 1.0; let originalGameSpeedMultiplier = 1.0;
         let isSeekingSafeSpot = false; let safeSpotTargetX = null;
 
-        // --- Game Elements Setup (Relative to canvas size) ---
-        // Using original percentages, suitable for portrait-like ratios
-        const carWidth = canvas.width * 0.125;
-        const carHeight = carWidth * 1.8;
-        const car = { x: canvas.width / 2 - carWidth / 2, y: canvas.height - carHeight - 15, speed: canvas.width * 0.015 };
+        // --- Game Elements Setup (Relative to CURRENT canvas size) ---
+        // Recalculate these based on the actual canvas dimensions set by setGameSize()
+        // It's best to recalculate them inside startGame() as well.
+        let carWidth = canvas.width * 0.125;
+        let carHeight = carWidth * 1.8;
+        let car = { x: canvas.width / 2 - carWidth / 2, y: canvas.height - carHeight - 15, speed: canvas.width * 0.015 };
 
-        const coinWidth = canvas.width * 0.05;
-        const coinHeight = coinWidth;
-        const superCoinWidth = canvas.width * 0.075;
-        const superCoinHeight = superCoinWidth;
-        const autoCoinWidth = superCoinWidth * 3;
-        const autoCoinHeight = autoCoinWidth;
-        const enemyCarWidth = carWidth;
-        const enemyCarHeight = carHeight;
+        let coinWidth = canvas.width * 0.05;
+        let coinHeight = coinWidth;
+        let superCoinWidth = canvas.width * 0.075;
+        let superCoinHeight = superCoinWidth;
+        let autoCoinWidth = superCoinWidth * 3;
+        let autoCoinHeight = autoCoinWidth;
+        let enemyCarWidth = carWidth;
+        let enemyCarHeight = carHeight;
         const enemyCars = []; const coins = []; const superCoins = []; const autoCoins = [];
+
+        function updateElementSizes() {
+             carWidth = canvas.width * 0.125;
+             carHeight = carWidth * 1.8;
+             car.speed = canvas.width * 0.015; // Also update speed if needed
+
+             coinWidth = canvas.width * 0.05;
+             coinHeight = coinWidth;
+             superCoinWidth = canvas.width * 0.075;
+             superCoinHeight = superCoinWidth;
+             autoCoinWidth = superCoinWidth * 3;
+             autoCoinHeight = autoCoinWidth;
+             enemyCarWidth = carWidth;
+             enemyCarHeight = carHeight;
+             console.log("Updated element sizes based on canvas:", canvas.width, "x", canvas.height);
+        }
+        updateElementSizes(); // Initial update based on initial size calculation
+
 
         // --- Image Loading ---
         const images = {}; const imageSources = [ { name: 'car', src: 'car.png' }, { name: 'enemyCar', src: 'carup.png' }, { name: 'road', src: 'road.png' }, { name: 'coin', src: 'coin.png' }, { name: 'superCoin', src: 'supercoin.png' }, { name: 'autoCoin', src: 'autocoin.png' }, { name: 'autoCar', src: 'autocar.png' } ];
         let assetsLoaded = false;
         function loadImage(imgData) { return new Promise((resolve, reject) => { const img = new Image(); img.onload = () => { images[imgData.name] = img; resolve(img); }; img.onerror = () => { console.error(` X Failed to load image: ${imgData.src}`); images[imgData.name] = null; reject(new Error(`Failed to load ${imgData.src}`)); }; img.src = imgData.src; }); }
-        async function preloadImages() { if (assetsLoaded) return Promise.resolve(); console.log("Starting asset preloading..."); loadingMessage.innerText = "Loading Assets..."; loadingMessage.style.display = 'block'; showMenuButton.disabled = true; const promises = imageSources.map(loadImage); try { await Promise.all(promises); const essentialImages = ['car', 'enemyCar', 'road', 'autoCar']; const allEssentialLoaded = essentialImages.every(name => images[name] != null); if (allEssentialLoaded) { console.log("All essential images loaded successfully."); assetsLoaded = true; loadingMessage.style.display = 'none'; showMenuButton.disabled = false; return Promise.resolve(); } else { console.error("Essential images failed to load."); loadingMessage.innerText = "Error: Failed to load essential assets!"; essentialImages.forEach(name => { if(!images[name]) console.error(` - Missing essential image: ${name}`) }); return Promise.reject("Essential image load failure"); } } catch (error) { console.error("Error during image preloading:", error); loadingMessage.innerText = "Fatal Error Loading Assets!"; return Promise.reject(error); } }
+        async function preloadImages() { if (assetsLoaded) return Promise.resolve(); console.log("Starting asset preloading..."); loadingMessage.style.display = 'block'; showMenuButton.style.display = 'none'; /* Hide button during load */ const promises = imageSources.map(loadImage); try { await Promise.all(promises); const essentialImages = ['car', 'enemyCar', 'road', 'autoCar']; const allEssentialLoaded = essentialImages.every(name => images[name] != null); if (allEssentialLoaded) { console.log("All essential images loaded successfully."); assetsLoaded = true; loadingMessage.style.display = 'none'; showMenuButton.style.display = 'block'; /* Show button again */ return Promise.resolve(); } else { console.error("Essential images failed to load."); loadingMessage.innerText = "Error: Failed to load essential assets!"; essentialImages.forEach(name => { if(!images[name]) console.error(` - Missing essential image: ${name}`) }); showMenuButton.style.display = 'block'; /* Show button even on error */ return Promise.reject("Essential image load failure"); } } catch (error) { console.error("Error during image preloading:", error); loadingMessage.innerText = "Fatal Error Loading Assets!"; showMenuButton.style.display = 'block'; /* Show button on error */ return Promise.reject(error); } }
 
         // --- Dynamic Level Configuration ---
         function getLevelConfig(levelNum) {
@@ -281,14 +419,24 @@
         }
 
         // --- Speeds, Rates, Scrolling, Controls, Audio ---
-        // Using original base speeds/rates based on height
-        const ABSOLUTE_BASE_ROAD_SPEED = canvas.height * 0.007;
-        const ABSOLUTE_BASE_ENEMY_SPEED = canvas.height * 0.008;
-        const ABSOLUTE_BASE_COIN_SPEED = canvas.height * 0.006;
-        const ABSOLUTE_BASE_SUPERCOIN_SPEED = canvas.height * 0.006;
-        const ABSOLUTE_BASE_ENEMY_SPAWN_RATE = 0.011;
-        const ABSOLUTE_BASE_COIN_SPAWN_RATE = 0.02;
-        const ABSOLUTE_BASE_SUPERCOIN_SPAWN_RATE = 0.005;
+        // Base speeds depend on canvas height which might change slightly
+        let ABSOLUTE_BASE_ROAD_SPEED = canvas.height * 0.007;
+        let ABSOLUTE_BASE_ENEMY_SPEED = canvas.height * 0.008;
+        let ABSOLUTE_BASE_COIN_SPEED = canvas.height * 0.006;
+        let ABSOLUTE_BASE_SUPERCOIN_SPEED = canvas.height * 0.006;
+        let ABSOLUTE_BASE_ENEMY_SPAWN_RATE = 0.011;
+        let ABSOLUTE_BASE_COIN_SPAWN_RATE = 0.02;
+        let ABSOLUTE_BASE_SUPERCOIN_SPAWN_RATE = 0.005;
+
+        function updateBaseSpeedsAndRates() {
+             ABSOLUTE_BASE_ROAD_SPEED = canvas.height * 0.007;
+             ABSOLUTE_BASE_ENEMY_SPEED = canvas.height * 0.008;
+             ABSOLUTE_BASE_COIN_SPEED = canvas.height * 0.006;
+             ABSOLUTE_BASE_SUPERCOIN_SPEED = canvas.height * 0.006;
+             // Spawn rates are generally less dependent on exact height
+             console.log("Updated base speeds based on canvas height:", canvas.height);
+        }
+         updateBaseSpeedsAndRates(); // Initial update
 
         // gameSpeedMultiplier managed dynamically
         let roadSpeed, enemySpeed, coinSpeed, superCoinSpeed; let enemySpawnRate, coinSpawnRate, superCoinSpawnRate; let roadY = 0; let moveLeft = false; let moveRight = false;
@@ -296,7 +444,18 @@
         function playSound(soundElement) { if(soundElement) { soundElement.currentTime = 0; soundElement.play().catch(e => {/*console.warn("Audio play failed:", e)*/}); } }
 
         // --- Update Speeds Based on Current gameSpeedMultiplier ---
-        function updateGameSpeed() { roadSpeed = ABSOLUTE_BASE_ROAD_SPEED * gameSpeedMultiplier; enemySpeed = ABSOLUTE_BASE_ENEMY_SPEED * gameSpeedMultiplier; coinSpeed = ABSOLUTE_BASE_COIN_SPEED * gameSpeedMultiplier; superCoinSpeed = ABSOLUTE_BASE_SUPERCOIN_SPEED * gameSpeedMultiplier; enemySpawnRate = ABSOLUTE_BASE_ENEMY_SPAWN_RATE * currentLevelConfig.enemyRateMultiplier * gameSpeedMultiplier; coinSpawnRate = ABSOLUTE_BASE_COIN_SPAWN_RATE * currentLevelConfig.coinRateMultiplier * gameSpeedMultiplier; superCoinSpawnRate = ABSOLUTE_BASE_SUPERCOIN_SPAWN_RATE * gameSpeedMultiplier; }
+        function updateGameSpeed() {
+            // Ensure base speeds are current before applying multiplier
+            // updateBaseSpeedsAndRates(); // Might be overkill to call this every time speed changes
+
+            roadSpeed = ABSOLUTE_BASE_ROAD_SPEED * gameSpeedMultiplier;
+            enemySpeed = ABSOLUTE_BASE_ENEMY_SPEED * gameSpeedMultiplier;
+            coinSpeed = ABSOLUTE_BASE_COIN_SPEED * gameSpeedMultiplier;
+            superCoinSpeed = ABSOLUTE_BASE_SUPERCOIN_SPEED * gameSpeedMultiplier;
+            enemySpawnRate = ABSOLUTE_BASE_ENEMY_SPAWN_RATE * currentLevelConfig.enemyRateMultiplier * gameSpeedMultiplier;
+            coinSpawnRate = ABSOLUTE_BASE_COIN_SPAWN_RATE * currentLevelConfig.coinRateMultiplier * gameSpeedMultiplier;
+            superCoinSpawnRate = ABSOLUTE_BASE_SUPERCOIN_SPAWN_RATE * gameSpeedMultiplier;
+        }
 
         // --- Drawing Functions --- (No changes needed)
         function drawRoad() { if (images.road) { let roadY2 = roadY - canvas.height; ctx.drawImage(images.road, 0, roadY, canvas.width, canvas.height); ctx.drawImage(images.road, 0, roadY2, canvas.width, canvas.height); roadY = (roadY + roadSpeed) % canvas.height; } else { ctx.fillStyle = '#333'; ctx.fillRect(0, 0, canvas.width, canvas.height); } }
@@ -320,16 +479,18 @@
         // --- Show Level Selection ---
         function showLevelSelection() {
              console.log(`Showing Level Selection Page ${currentPage}. Highest Unlocked: ${highestUnlockedLevel}`);
-             hideGameScreen(); hideAllOverlays(); showMenuButton.style.display = 'none';
-             levelSelectionScreen.style.display = 'block';
+             hideGameScreen(); // Hide game area
+             hideAllOverlays();
+             showMenuButton.style.display = 'none'; // Hide start button
+             levelSelectionScreen.style.display = 'block'; // Show level selection
              document.getElementById('currentPageSpan').textContent = currentPage;
              const startLevel = (currentPage - 1) * LEVELS_PER_PAGE + 1;
              const endLevel = startLevel + LEVELS_PER_PAGE - 1;
              levelButtonsContainer.innerHTML = '';
              for (let i = startLevel; i <= endLevel; i++) {
                  const button = document.createElement('button');
-                 const config = getLevelConfig(i); // Get config to display target score
-                 button.innerHTML = `Level ${i}<span>Target: ${config.targetScore}</span>`; // Set innerHTML to allow span
+                 const config = getLevelConfig(i);
+                 button.innerHTML = `Level ${i}<span>Target: ${config.targetScore}</span>`;
                  button.classList.add('level-button');
                  button.dataset.level = i;
                  if (i <= highestUnlockedLevel) {
@@ -346,20 +507,20 @@
         }
 
         // --- Play Winning Video ---
-        function playWinningVideo() { console.log("Starting winning video playback..."); hideGameScreen(); hideAllOverlays(); winningVideoContainer.style.display = 'block'; winningVideo.currentTime = 0; winningVideo.play().then(() => { console.log("Winning video started playing."); }).catch(error => { console.error("Video play failed:", error); showPostVideoScreen(); }); }
+        function playWinningVideo() { console.log("Starting winning video playback..."); hideGameScreen(); hideAllOverlays(); showMenuButton.style.display = 'none'; winningVideoContainer.style.display = 'block'; winningVideo.currentTime = 0; winningVideo.play().then(() => { console.log("Winning video started playing."); }).catch(error => { console.error("Video play failed:", error); showPostVideoScreen(); }); }
 
         // --- Show Screen After Video ---
         function showPostVideoScreen() {
             console.log("Showing screen after video playback.");
-            hideGameScreen(); hideAllOverlays(); winningVideoContainer.style.display = 'none';
+            hideGameScreen(); hideAllOverlays(); showMenuButton.style.display = 'none'; winningVideoContainer.style.display = 'none';
             levelNumCompleteSpan.innerText = currentLevel; finalScoreSpan.innerText = score;
-            if (currentLevel >= MAX_PLAYABLE_LEVEL) { // Check against max playable
+            if (currentLevel >= MAX_PLAYABLE_LEVEL) {
                 levelCompleteScreen.querySelector('h2').innerHTML = `🎉 Max Level Reached! 🎉`;
                 nextLevelButton.disabled = true; nextLevelButton.innerText = "Amazing!"; nextLevelButton.style.display = 'inline-block';
             } else {
                 levelCompleteScreen.querySelector('h2').innerHTML = `Level <span id="levelNumComplete">${currentLevel}</span> Complete!`;
                 const nextLevelNum = currentLevel + 1;
-                if (nextLevelNum <= highestUnlockedLevel) { // Check unlock status only
+                if (nextLevelNum <= highestUnlockedLevel) {
                     nextLevelButton.disabled = false; nextLevelButton.innerText = "Next Level"; nextLevelButton.style.display = 'inline-block';
                 } else {
                     nextLevelButton.disabled = true; nextLevelButton.innerText = "Locked"; nextLevelButton.style.display = 'none';
@@ -369,7 +530,7 @@
         }
 
 
-        // --- Find Safe Spot Logic --- (Using original distances suitable for portrait)
+        // --- Find Safe Spot Logic --- (Using original distances)
         function findAndSetSafeSpot() { console.log("Attempting to find a safe spot..."); const SAFE_CHECK_DISTANCE_Y = carHeight * 3.5; const LANE_CHECK_POSITIONS = [ carWidth * 0.75, canvas.width / 2, canvas.width - carWidth * 0.75 ]; let foundSafeSpot = false; for (const targetX of LANE_CHECK_POSITIONS) { let isLaneSafe = true; const laneLeft = targetX - carWidth / 2; const laneRight = targetX + carWidth / 2; for (const enemy of enemyCars) { const verticalDist = car.y - (enemy.y + enemyCarHeight); if (enemy.y < car.y && verticalDist < SAFE_CHECK_DISTANCE_Y) { const enemyLeft = enemy.x; const enemyRight = enemy.x + enemyCarWidth; if (enemyRight > laneLeft && enemyLeft < laneRight) { isLaneSafe = false; break; } } } if (isLaneSafe) { console.log(` - Found safe spot at X=${targetX.toFixed(0)}`); safeSpotTargetX = targetX; isSeekingSafeSpot = true; foundSafeSpot = true; return true; } } if (!foundSafeSpot) { console.log(" - No completely safe spot found."); safeSpotTargetX = null; isSeekingSafeSpot = false; } return false; }
 
         // --- Deactivate Autopilot Effects ---
@@ -387,7 +548,7 @@
         function handleLevelWin() { console.log(`Level ${currentLevel} Complete! Score: ${score}`); moveLeft = false; moveRight = false; isSeekingSafeSpot = false; safeSpotTargetX = null; gameRunning = false; gameOver = true; backgroundMusic.pause(); deactivateAutopilotEffects(); playSound(levelWinSound); saveUnlockProgress(currentLevel + 1); playWinningVideo(); }
 
         // --- Handle FINAL Game Over Sequence ---
-        function triggerFinalGameOver() { if (gameOver) return; console.log(`Game Over Triggered! Level ${currentLevel}, Score: ${score}`); moveLeft = false; moveRight = false; isSeekingSafeSpot = false; safeSpotTargetX = null; gameOver = true; gameRunning = false; backgroundMusic.pause(); playSound(gameOverSound); deactivateAutopilotEffects(); gameOverLevelSpan.innerText = currentLevel; gameOverScoreSpan.innerText = score; setTimeout(() => { hideGameScreen(); hideAllOverlays(); gameOverScreen.style.display = 'block'; }, 300); }
+        function triggerFinalGameOver() { if (gameOver) return; console.log(`Game Over Triggered! Level ${currentLevel}, Score: ${score}`); moveLeft = false; moveRight = false; isSeekingSafeSpot = false; safeSpotTargetX = null; gameOver = true; gameRunning = false; backgroundMusic.pause(); playSound(gameOverSound); deactivateAutopilotEffects(); gameOverLevelSpan.innerText = currentLevel; gameOverScoreSpan.innerText = score; setTimeout(() => { hideGameScreen(); hideAllOverlays(); showMenuButton.style.display = 'none'; gameOverScreen.style.display = 'block'; }, 300); }
 
         // --- Autopilot Activation ---
         function activateAutopilot() {
@@ -407,7 +568,7 @@
             else { console.log(`Insufficient coins (${score} < ${CONTINUE_COST}). Triggering final game over.`); triggerFinalGameOver(); }
         }
 
-        // --- Calculate Autopilot Movement --- (Using original ranges/thresholds)
+        // --- Calculate Autopilot Movement --- (Using original ranges)
         function calculateAutopilotMove() {
             const SAFE_DISTANCE_Y = carHeight * 2.5;
             const DODGE_THRESHOLD_X = carWidth * 0.7;
@@ -428,14 +589,14 @@
 
             // Autopilot Checks
             if (isAutopilotActive) {
-                if (now >= autopilotEndTime) { deactivateAutopilotEffects(); } // Full deactivation
-                else if (!autopilotSpeedWarningActive && now >= autopilotEndTime - 2000) { // Speed/Slider/Safe Spot warning check
+                if (now >= autopilotEndTime) { deactivateAutopilotEffects(); }
+                else if (!autopilotSpeedWarningActive && now >= autopilotEndTime - 2000) {
                      autopilotSpeedWarningActive = true;
                      if(originalCarSpeed > 0 && car.speed !== originalCarSpeed) { car.speed = originalCarSpeed; console.log("Autopilot ending soon... Restored original CAR speed:", car.speed); }
-                     if(gameSpeedMultiplier !== originalGameSpeedMultiplier){ gameSpeedMultiplier = originalGameSpeedMultiplier; console.log("Autopilot ending soon... Restored original GAME speed multiplier:", gameSpeedMultiplier); updateGameSpeed(); } // Apply speed change
-                     speedSlider.value = originalSliderValue; // Restore slider value (still disabled)
+                     if(gameSpeedMultiplier !== originalGameSpeedMultiplier){ gameSpeedMultiplier = originalGameSpeedMultiplier; console.log("Autopilot ending soon... Restored original GAME speed multiplier:", gameSpeedMultiplier); updateGameSpeed(); }
+                     speedSlider.value = originalSliderValue;
                      console.log("Autopilot ending soon... Restored SLIDER value to:", originalSliderValue);
-                     findAndSetSafeSpot(); // Find safe spot during warning
+                     findAndSetSafeSpot();
                 }
             }
 
@@ -444,20 +605,20 @@
             // Update Layer
             if (!gameOver) {
                 // Movement Logic
-                if (isSeekingSafeSpot && safeSpotTargetX !== null) { // Prioritize seeking safe spot
-                    const carCenterX = car.x + carWidth / 2; const targetDiff = safeSpotTargetX - carCenterX; const moveThreshold = car.speed * 0.5; // Use normal speed for threshold
-                    if (Math.abs(targetDiff) > moveThreshold) { if (targetDiff > 0 && car.x < canvas.width - carWidth) car.x += car.speed; else if (targetDiff < 0 && car.x > 0) car.x -= car.speed; } // Move with normal speed
-                    else { /*console.log("Reached safe spot vicinity.");*/ isSeekingSafeSpot = false; } // Stop seeking
+                if (isSeekingSafeSpot && safeSpotTargetX !== null) {
+                    const carCenterX = car.x + carWidth / 2; const targetDiff = safeSpotTargetX - carCenterX; const moveThreshold = car.speed * 0.5;
+                    if (Math.abs(targetDiff) > moveThreshold) { if (targetDiff > 0 && car.x < canvas.width - carWidth) car.x += car.speed; else if (targetDiff < 0 && car.x > 0) car.x -= car.speed; }
+                    else { isSeekingSafeSpot = false; }
                     car.x = Math.max(0, Math.min(canvas.width - carWidth, car.x));
-                } else if (isAutopilotActive) { // Normal autopilot movement (uses current potentially boosted car.speed)
+                } else if (isAutopilotActive) {
                     const autoMove = calculateAutopilotMove();
                     if (autoMove === -1 && car.x > 0) car.x -= car.speed; else if (autoMove === 1 && car.x < canvas.width - carWidth) car.x += car.speed;
                     car.x = Math.max(0, Math.min(canvas.width - carWidth, car.x));
-                } else { // Player control (uses normal car.speed)
+                } else {
                     if (moveLeft && car.x > 0) car.x -= car.speed; if (moveRight && car.x < canvas.width - carWidth) car.x += car.speed;
                     car.x = Math.max(0, Math.min(canvas.width - carWidth, car.x));
                 }
-                // Other Updates (use speeds set by updateGameSpeed)
+                // Other Updates
                 updateEnemyCars(); if (!gameOver) updateCoins(); if (!gameOver) updateSuperCoins(); if (!gameOver) updateAutoCoins();
             }
 
@@ -474,50 +635,69 @@
             requestAnimationFrame(gameLoop);
         }
 
-        // --- Start Game Function ---
+        // --- Start Game Function --- MODIFIED ---
         function startGame(levelNum) {
             console.log(`Starting Level ${levelNum}...`);
             if (!assetsLoaded) { console.error("Assets not loaded!"); alert("Error: Game assets are not loaded. Please try again."); showMenuButton.style.display = 'block'; return; }
             if (gameRunning) { gameRunning = false; console.warn("Stopping previous game loop."); }
 
-            // Ensure canvas and container dimensions are set correctly
-            canvas.width = canvasSize.width;
-            canvas.height = canvasSize.height;
-            gameArea.style.width = `${canvas.width}px`;
-            gameArea.style.height = `${canvas.height}px`;
-            console.log(`Canvas/GameArea size confirmed for start: ${canvas.width}x${canvas.height}`);
+            // Ensure game area and canvas have the correct dimensions FOR THIS GAME INSTANCE
+            setGameSize(); // Recalculate and apply sizes
+            updateElementSizes(); // Update sizes of car, coins etc based on final canvas size
+            updateBaseSpeedsAndRates(); // Update speeds based on final canvas height
 
-            hideAllOverlays(); showMenuButton.style.display = 'none'; showGameScreen();
+            hideAllOverlays();
+            showMenuButton.style.display = 'none'; // Hide start button
+            showGameScreen(); // Show the #gameArea and its UI children
+
             currentLevel = levelNum;
-            currentLevelConfig = getLevelConfig(levelNum); // Get dynamic config
+            currentLevelConfig = getLevelConfig(levelNum);
             if (!currentLevelConfig) { console.error(`Could not generate config for level ${levelNum}!`); alert("Error loading level configuration."); showLevelSelection(); return; }
             targetScore = currentLevelConfig.targetScore;
             console.log(`Level ${currentLevel} Config Loaded. Target: ${targetScore}, EnemyRate: ${currentLevelConfig.enemyRateMultiplier.toFixed(2)}`);
+
             // Reset Game State
             score = 0; timeElapsed = 0; gameOver = false; gameRunning = false; isInvincible = false;
-            isAutopilotActive = false; autopilotEndTime = 0; autopilotSpeedWarningActive = false; isSeekingSafeSpot = false; safeSpotTargetX = null; // Reset safe spot state
-            nextAutoCoinSpawnTime = Date.now() + AUTOCOIN_INITIAL_SPAWN_DELAY; // Initial 10s delay
+            isAutopilotActive = false; autopilotEndTime = 0; autopilotSpeedWarningActive = false; isSeekingSafeSpot = false; safeSpotTargetX = null;
+            nextAutoCoinSpawnTime = Date.now() + AUTOCOIN_INITIAL_SPAWN_DELAY;
             backgroundMusicResumeTime = 0;
-            // Recalculate initial car speed based on current canvas width
-            const baseCarSpeed = canvas.width * 0.015; // Using original percentage
-            car.speed = baseCarSpeed; originalCarSpeed = baseCarSpeed;
+
+            // Use the recalculated car speed
+            originalCarSpeed = car.speed;
             originalSliderValue = 1.0; speedSlider.value = 1.0; speedSlider.disabled = false;
             gameSpeedMultiplier = 1.0; originalGameSpeedMultiplier = 1.0;
             console.log(`Initial car speed: ${car.speed.toFixed(2)}, Initial game multiplier: ${gameSpeedMultiplier}`);
             console.log(`Initial AutoCoin spawn scheduled around: ${nextAutoCoinSpawnTime}`);
-            car.x = canvas.width / 2 - carWidth / 2; car.y = canvas.height - carHeight - 15; // Recenter car
+
+            // Reset car position based on current canvas size
+            car.x = canvas.width / 2 - carWidth / 2;
+            car.y = canvas.height - carHeight - 15;
+
             enemyCars.length = 0; coins.length = 0; superCoins.length = 0; autoCoins.length = 0;
-            scoreDisplay.textContent = `Score: ${score} / ${targetScore}`; // Set initial score display with target
+            scoreDisplay.textContent = `Score: ${score} / ${targetScore}`;
             timerDisplay.innerText = `Time: 0s`; moveLeft = false; moveRight = false; roadY = 0;
-            updateGameSpeed(); // Apply initial game speed based on multiplier
+            updateGameSpeed(); // Apply initial game speed based on multiplier & base speeds
+
             // Initial Music Setup
              autopilotMusic.pause(); autopilotMusic.currentTime = 0;
              backgroundMusic.currentTime = 0; backgroundMusic.play().catch(error => console.warn("Music play failed:", error));
+
             gameRunning = true; lastTime = performance.now(); console.log("First frame requested for game loop."); requestAnimationFrame(gameLoop);
         }
 
         // --- Event Listeners ---
-        showMenuButton.addEventListener('click', () => { console.log("Show Menu Button clicked."); preloadImages().then(() => { console.log("Preloading successful."); showLevelSelection(); }).catch((err) => { console.error("Preloading failed, cannot show menu.", err); }); });
+        showMenuButton.addEventListener('click', () => {
+             console.log("Show Menu Button clicked.");
+             // Preload images FIRST, then show level selection
+             preloadImages().then(() => {
+                 console.log("Preloading successful.");
+                 showLevelSelection();
+             }).catch((err) => {
+                 console.error("Preloading failed, cannot show menu.", err);
+                 // Optionally show an error message to the user here
+             });
+         });
+
         document.addEventListener('keydown', (e) => { if (isAutopilotActive || !gameRunning || gameOver) return; if (e.key === "ArrowLeft" || e.key === "a") moveLeft = true; if (e.key === "ArrowRight" || e.key === "d") moveRight = true; });
         document.addEventListener('keyup', (e) => { if (isAutopilotActive || !gameRunning || gameOver) return; if (e.key === "ArrowLeft" || e.key === "a") moveLeft = false; if (e.key === "ArrowRight" || e.key === "d") moveRight = false; });
         function handleControlStart(isLeft, event) { if (isAutopilotActive || !gameRunning || gameOver) return; event.preventDefault(); if (isLeft) moveLeft = true; else moveRight = true; }
@@ -526,41 +706,64 @@
         rightButton.addEventListener('mousedown', (e) => handleControlStart(false, e)); rightButton.addEventListener('mouseup', (e) => handleControlEnd(false, e)); rightButton.addEventListener('mouseleave', (e) => { if(moveRight) handleControlEnd(false, e); });
         leftButton.addEventListener('touchstart', (e) => handleControlStart(true, e), { passive: false }); leftButton.addEventListener('touchend', (e) => handleControlEnd(true, e), { passive: false }); leftButton.addEventListener('touchcancel', (e) => handleControlEnd(true, e), { passive: false });
         rightButton.addEventListener('touchstart', (e) => handleControlStart(false, e), { passive: false }); rightButton.addEventListener('touchend', (e) => handleControlEnd(false, e), { passive: false }); rightButton.addEventListener('touchcancel', (e) => handleControlEnd(false, e), { passive: false });
-        // Slider
+
         speedSlider.addEventListener('input', () => {
-            if (isAutopilotActive) { speedSlider.value = speedSlider.max; return; } // Prevent manual change & force max visual
+            if (isAutopilotActive) { speedSlider.value = speedSlider.max; return; }
             if (gameRunning && !gameOver) {
-                originalGameSpeedMultiplier = parseFloat(speedSlider.value); // Store player's choice for later restoration
-                gameSpeedMultiplier = originalGameSpeedMultiplier; // Update current multiplier
-                updateGameSpeed(); // Apply the change to game speeds
+                originalGameSpeedMultiplier = parseFloat(speedSlider.value);
+                gameSpeedMultiplier = originalGameSpeedMultiplier;
+                updateGameSpeed();
             }
         });
+
         replayLevelButton.addEventListener('click', () => startGame(currentLevel));
         nextLevelButton.addEventListener('click', () => { const nextLvl = currentLevel + 1; if (nextLvl <= highestUnlockedLevel) startGame(nextLvl); });
-        levelMenuButtonLC.addEventListener('click', () => { currentPage = Math.ceil(currentLevel / LEVELS_PER_PAGE); showLevelSelection(); } ); // Go to the page of the completed level
+        levelMenuButtonLC.addEventListener('click', () => { currentPage = Math.ceil(currentLevel / LEVELS_PER_PAGE); showLevelSelection(); } );
         retryLevelButton.addEventListener('click', () => startGame(currentLevel));
-        levelMenuButtonGO.addEventListener('click', () => { currentPage = Math.ceil(currentLevel / LEVELS_PER_PAGE); showLevelSelection(); } ); // Go to the page of the failed level
-        // Video End Listener
+        levelMenuButtonGO.addEventListener('click', () => { currentPage = Math.ceil(currentLevel / LEVELS_PER_PAGE); showLevelSelection(); } );
         winningVideo.addEventListener('ended', () => { console.log("Winning video finished."); showPostVideoScreen(); });
-        // Optional Skip Button Listener
         // skipVideoButton.addEventListener('click', () => { winningVideo.pause(); showPostVideoScreen(); });
-         // --- Pagination Button Listeners ---
+
          document.getElementById('prevPageButton').addEventListener('click', () => { if (currentPage > 1) { currentPage--; showLevelSelection(); } });
          document.getElementById('nextPageButton').addEventListener('click', () => { const endLevel = (currentPage - 1) * LEVELS_PER_PAGE + LEVELS_PER_PAGE; const firstLevelOfNextPage = endLevel + 1; if (highestUnlockedLevel >= firstLevelOfNextPage) { currentPage++; showLevelSelection(); } });
 
-        // --- Initial Setup ---
-        window.onload = () => { console.log("Window loaded."); loadUnlockProgress(); currentPage = Math.ceil(highestUnlockedLevel / LEVELS_PER_PAGE); /* Start on the latest unlocked page */ hideGameScreen(); hideAllOverlays(); showMenuButton.style.display = 'block'; console.log("Initial setup complete. Waiting for user interaction."); };
+        // --- Resize Listener (Optional but Recommended for Aspect Ratio Control) ---
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            // Debounce resize events to avoid excessive recalculations
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                console.log("Window resized, recalculating game size...");
+                setGameSize(); // Recalculate and apply size for #gameArea and canvas
+                updateElementSizes(); // Update relative sizes
+                updateBaseSpeedsAndRates(); // Update base speeds
 
-        // Optional: Add resize listener if you want the canvas to resize dynamically
-        // window.addEventListener('resize', () => {
-        //     const newSize = calculateCanvasSize();
-        //     canvas.width = newSize.width;
-        //     canvas.height = newSize.height;
-        //     gameArea.style.width = `${canvas.width}px`;
-        //     gameArea.style.height = `${canvas.height}px`;
-        //     console.log(`Resized canvas to: ${canvas.width} x ${canvas.height}`);
-        //     // Recalculate relevant element sizes/positions if necessary
-        // });
+                // If game is running, update current speeds and recenter car if needed
+                if (gameRunning && !gameOver) {
+                    updateGameSpeed(); // Reapply current speed multiplier
+                    // Optional: Recenter car slightly if needed, though bottom position is usually fine
+                    car.x = Math.max(0, Math.min(canvas.width - carWidth, car.x)); // Ensure car is within new bounds
+                    car.y = canvas.height - carHeight - 15;
+                    console.log("Applied resize adjustments during gameplay.");
+                } else if (!gameRunning && gameArea.style.display !== 'none') {
+                    // If game area is visible but game not running (e.g., paused), maybe redraw?
+                    // This depends on how you handle pause states.
+                }
+            }, 250); // Wait 250ms after last resize event
+        });
+
+        // --- Initial Setup ---
+        window.onload = () => {
+            console.log("Window loaded.");
+            loadUnlockProgress();
+            currentPage = Math.ceil(highestUnlockedLevel / LEVELS_PER_PAGE);
+            hideGameScreen();
+            hideAllOverlays();
+            // Size is set earlier now
+            // setGameSize(); // Ensure size is set on load
+            showMenuButton.style.display = 'block'; // Show button after setup
+            console.log("Initial setup complete. Waiting for user interaction.");
+         };
 
     </script>
 </body>
